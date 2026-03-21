@@ -2,7 +2,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .chatbot import generate_chatbot_reply
 from .services import (
+    build_company_sentiment_payload,
+    build_sentiment_overview_payload,
     build_portfolio_analytics_payload,
+    build_portfolio_sentiment_payload,
     build_clustering_payload,
     build_discount_payload,
     build_regression_payload,
@@ -23,6 +26,30 @@ class PortfolioAnalyticsView(APIView):
         payload = build_portfolio_analytics_payload(portfolio_id=portfolio_id, user=request.user)
         if payload is None:
             return Response({'detail': 'Portfolio not found.'}, status=404)
+        return Response(payload)
+
+
+class PortfolioSentimentView(APIView):
+    def get(self, request, portfolio_id):
+        payload = build_portfolio_sentiment_payload(portfolio_id=portfolio_id, user=request.user)
+        if payload is None:
+            return Response({'detail': 'Portfolio not found.'}, status=404)
+        return Response(payload)
+
+
+class SentimentOverviewView(APIView):
+    def get(self, request):
+        payload = build_sentiment_overview_payload(user=request.user)
+        return Response(payload)
+
+
+class CompanySentimentView(APIView):
+    def get(self, request):
+        symbol = request.query_params.get('symbol', '')
+        company_name = request.query_params.get('company_name', '')
+        payload = build_company_sentiment_payload(symbol=symbol, company_name=company_name)
+        if payload is None:
+            return Response({'detail': 'Query parameter "symbol" is required.'}, status=400)
         return Response(payload)
 
 

@@ -449,11 +449,20 @@ a {
   background: linear-gradient(135deg, #076f7c, #0fb4a8);
 }
 
+.portfolio-action-sentiment {
+  background: linear-gradient(135deg, #ca6702, #ee9b00);
+}
+
 .portfolio-action-active {
   transform: translateY(-2px);
   box-shadow: 0 18px 30px rgba(5, 45, 53, 0.2);
   outline: 2px solid rgba(10, 147, 150, 0.2);
   outline-offset: 2px;
+}
+
+.portfolio-report-link {
+  width: 100%;
+  text-align: center;
 }
 
 .workflow {
@@ -696,6 +705,137 @@ a {
 
 .cluster-legend li {
   margin-bottom: 0.25rem;
+}
+
+.sentiment-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.sentiment-summary-card,
+.sentiment-stock-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.9rem;
+}
+
+.sentiment-summary-card h4,
+.sentiment-stock-card h4 {
+  margin: 0.2rem 0;
+}
+
+.sentiment-summary-card strong {
+  font-size: 1.15rem;
+  color: var(--brand-0);
+}
+
+.sentiment-stock-list {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+}
+
+.sentiment-stock-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.sentiment-stock-head h4 span {
+  font-size: 0.96rem;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.sentiment-badge {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sentiment-positive {
+  background: rgba(74, 222, 128, 0.18);
+  color: #166534;
+}
+
+.sentiment-neutral {
+  background: rgba(148, 163, 184, 0.18);
+  color: #334155;
+}
+
+.sentiment-negative {
+  background: rgba(248, 113, 113, 0.18);
+  color: #991b1b;
+}
+
+.sentiment-headline-list {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.sentiment-headline-item {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(112, 161, 160, 0.28);
+  background: rgba(243, 247, 246, 0.74);
+  text-decoration: none;
+}
+
+.sentiment-headline-item span {
+  color: var(--text-1);
+  font-size: 0.86rem;
+}
+
+.sentiment-report-meta {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.sentiment-report-grid {
+  align-items: start;
+}
+
+.sentiment-report-table-wrap {
+  overflow-x: auto;
+}
+
+.sentiment-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+
+.sentiment-report-table th,
+.sentiment-report-table td {
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sentiment-report-table th {
+  color: #214249;
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sentiment-report-table tbody tr:hover {
+  background: rgba(148, 210, 189, 0.15);
+}
+
+.sentiment-results-offset {
+  margin-top: 8.5rem;
 }
 
 .chart-wrap {
@@ -975,6 +1115,60 @@ a {
   .portfolio-action-button {
     width: 100%;
     min-width: 0;
+  }
+
+  .sentiment-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sentiment-report-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .sentiment-stock-head {
+    flex-direction: column;
+  }
+
+  .sentiment-results-offset {
+    margin-top: 11rem;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .market-ticker-bar,
+  .topbar,
+  .assistant-widget {
+    display: none !important;
+  }
+
+  .app-page .content,
+  .container {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-hero,
+  .feature-card,
+  .analysis-panel,
+  .sentiment-summary-card,
+  .sentiment-stock-card,
+  .portfolio-card,
+  .news-card {
+    box-shadow: none !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+  }
+
+  .button,
+  .actions,
+  .portfolio-report-link {
+    display: none !important;
   }
 }
 

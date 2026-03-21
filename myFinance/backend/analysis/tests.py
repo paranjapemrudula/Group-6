@@ -102,3 +102,85 @@ class ChatbotApiTests(TestCase):
         self.assertEqual(len(response.data['pe_comparison']), 1)
         self.assertEqual(response.data['pe_comparison'][0]['pe_ratio'], 22.0)
         self.assertEqual(response.data['clustering']['points'], [])
+
+    @patch('analysis.services.get_stock_snapshot')
+    @patch('analysis.services.get_company_news')
+    def test_portfolio_sentiment_returns_stock_scores_and_headlines(self, mock_get_company_news, mock_get_stock_snapshot):
+        mock_get_company_news.return_value = [
+            {
+                'title': 'Infosys beats profit estimates after strong demand growth',
+                'summary': 'The company reported strong profit growth and an optimistic outlook.',
+                'publisher': 'Markets Daily',
+                'link': 'https://example.com/infosys-positive',
+                'published_at': 1710000000,
+                'image_url': None,
+            },
+            {
+                'title': 'Infosys faces lawsuit risk after weak quarter warning',
+                'summary': 'Investors are watching a lawsuit and warning signs after a weak update.',
+                'publisher': 'Markets Daily',
+                'link': 'https://example.com/infosys-negative',
+                'published_at': 1710000100,
+                'image_url': None,
+            },
+        ]
+        mock_get_stock_snapshot.return_value = {
+            'current_price': 1580.0,
+            'previous_close': 1560.0,
+            'price_change': 20.0,
+            'price_direction': 'up',
+            'price_direction_emoji': '↑',
+        }
+
+        portfolio = Portfolio.objects.get(user=self.user)
+        response = self.client.get(f'/api/portfolios/{portfolio.id}/sentiment/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['portfolio_name'], 'Long Term')
+        self.assertEqual(response.data['summary']['tracked_stocks'], 1)
+        self.assertEqual(response.data['summary']['total_articles'], 2)
+        self.assertEqual(len(response.data['stocks']), 1)
+        self.assertEqual(response.data['stocks'][0]['symbol'], 'INFY.NS')
+        self.assertEqual(response.data['stocks'][0]['coverage_count'], 2)
+        self.assertEqual(len(response.data['headlines']), 2)
+        self.assertIn(response.data['stocks'][0]['sentiment_label'], {'Positive', 'Neutral', 'Negative'})
+        self.assertEqual(response.data['stocks'][0]['price_direction'], 'up')
+
+    def test_sentiment_overview_returns_portfolios(self):
+        response = self.client.get('/api/sentiment/overview/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['portfolio_count'], 1)
+        self.assertEqual(len(response.data['items']), 1)
+        self.assertEqual(response.data['items'][0]['portfolio_name'], 'Long Term')
+        self.assertEqual(response.data['items'][0]['stock_count'], 1)
+
+    @patch('analysis.services.get_stock_snapshot')
+    @patch('analysis.services.get_company_news')
+    def test_company_sentiment_returns_summary_and_articles(self, mock_get_company_news, mock_get_stock_snapshot):
+        mock_get_company_news.return_value = [
+            {
+                'title': 'Infosys wins strong digital growth order book',
+                'summary': 'Strong growth and upbeat investor sentiment lifted the outlook.',
+                'publisher': 'Markets Daily',
+                'link': 'https://example.com/infosys-company-positive',
+                'published_at': 1710001000,
+                'image_url': None,
+            }
+        ]
+        mock_get_stock_snapshot.return_value = {
+            'current_price': 1600.0,
+            'previous_close': 1585.0,
+            'price_change': 15.0,
+            'price_direction': 'up',
+            'price_direction_emoji': '↑',
+        }
+
+        response = self.client.get('/api/sentiment/company/?symbol=INFY.NS&company_name=Infosys')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['symbol'], 'INFY.NS')
+        self.assertEqual(response.data['company_name'], 'Infosys')
+        self.assertEqual(response.data['summary']['price_direction'], 'up')
+        self.assertEqual(response.data['summary']['total_articles'], 1)
+        self.assertEqual(len(response.data['articles']), 1)
