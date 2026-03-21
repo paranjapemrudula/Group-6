@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   BarElement,
@@ -19,7 +19,6 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 function PortfolioDetailPage() {
   const timeframeOptions = ['1D', '1H', '1M']
   const { id } = useParams()
-  const portfolioInsightsRef = useRef(null)
   const [portfolio, setPortfolio] = useState(null)
   const [stocks, setStocks] = useState([])
   const [sectors, setSectors] = useState([])
@@ -238,11 +237,6 @@ function PortfolioDetailPage() {
     handleOpenAnalysis(analysisPanel.symbol, analysisPanel.type, analysisTimeframe)
   }, [analysisTimeframe])
 
-  useEffect(() => {
-    if (!portfolioInsights.section || !portfolioInsightsRef.current) return
-    portfolioInsightsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [portfolioInsights.section, portfolioInsights.loading, portfolioInsights.payload, portfolioInsights.error])
-
   const loadPortfolioInsights = async (section) => {
     setPortfolioInsights((prev) => ({
       section,
@@ -373,7 +367,7 @@ function PortfolioDetailPage() {
           <section className="portfolio-insights-ribbon">
             <div className="portfolio-insights-actions">
               <button
-              className={`button portfolio-action-button portfolio-action-pe ${
+                className={`button portfolio-action-button portfolio-action-pe ${
                   portfolioInsights.section === 'pe' ? 'portfolio-action-active' : ''
                 }`}
                 type="button"
@@ -390,6 +384,9 @@ function PortfolioDetailPage() {
               >
                 Stock Comparison on Clustering
               </button>
+              <Link className="button button-secondary portfolio-report-link" to={`/portfolios/${id}/sentiment-report`}>
+                Open Full Sentiment Report
+              </Link>
             </div>
           </section>
         ) : null}
@@ -634,7 +631,7 @@ function PortfolioDetailPage() {
       )}
 
       {(portfolioInsights.section || portfolioInsights.loading || portfolioInsights.error) && (
-        <section ref={portfolioInsightsRef} className="analysis-panel">
+        <section className="analysis-panel">
           <div className="analysis-panel-head">
             <h3>
               {portfolioInsights.section === 'cluster'

@@ -3,12 +3,17 @@ import pandas as pd
 import yfinance as yf
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
+from django.db.models import Count
 from portfolios.models import Portfolio
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
+from stocks.services import get_company_news
 from stocks.models import PortfolioStock
 from stocks.services import get_stock_snapshot
+
+from .models import PortfolioSentimentSnapshot
 
 def normalize_timeframe(timeframe: str):
     value = (timeframe or '').strip().upper().replace(' ', '')
@@ -248,6 +253,392 @@ def _portfolio_cluster_name(avg_pe: float, avg_discount: float, avg_range_positi
     if avg_pe >= 28:
         return 'Premium Growth'
     return 'Balanced Core'
+
+
+POSITIVE_NEWS_TERMS = {
+    'beat',
+    'beats',
+    'surge',
+    'surges',
+    'growth',
+    'grows',
+    'gain',
+    'gains',
+    'profit',
+    'profits',
+    'strong',
+    'bullish',
+    'upgrade',
+    'upgrades',
+    'record',
+    'records',
+    'expansion',
+    'expanded',
+    'outperform',
+    'outperforms',
+    'optimistic',
+    'partnership',
+    'partnerships',
+    'acquisition',
+    'acquires',
+    'rebound',
+    'rebounds',
+    'recovery',
+}
+
+NEGATIVE_NEWS_TERMS = {
+    'miss',
+    'misses',
+    'drop',
+    'drops',
+    'fall',
+    'falls',
+    'loss',
+    'losses',
+    'weak',
+    'bearish',
+    'downgrade',
+    'downgrades',
+    'lawsuit',
+    'probe',
+    'investigation',
+    'penalty',
+    'default',
+    'fraud',
+    'cuts',
+    'cut',
+    'decline',
+    'declines',
+    'slump',
+    'slumps',
+    'risk',
+    'warning',
+    'warnings',
+    'volatile',
+    'volatility',
+}
+
+
+def _sentiment_label(score: float):
+    if score >= 0.2:
+        return 'Positive'
+    if score <= -0.2:
+        return 'Negative'
+    return 'Neutral'
+
+
+def _score_text_sentiment(text: str):
+    content = (text or '').lower()
+    if not content.strip():
+        return 0.0
+
+    positive_hits = sum(content.count(term) for term in POSITIVE_NEWS_TERMS)
+    negative_hits = sum(content.count(term) for term in NEGATIVE_NEWS_TERMS)
+    total_hits = positive_hits + negative_hits
+    if total_hits == 0:
+        return 0.0
+
+    score = (positive_hits - negative_hits) / total_hits
+    return round(float(max(-1.0, min(1.0, score))), 4)
+
+
+def _score_news_article(article: dict, symbol: str, company_name: str):
+    score = _score_text_sentiment(f"{article.get('title', '')} {article.get('summary', '')}")
+    title = (article.get('title') or '').lower()
+    summary = (article.get('summary') or '').lower()
+    symbol_text = (symbol or '').lower().replace('.ns', '')
+    company_text = (company_name or '').lower()
+
+    mention_bonus = 0.0
+    if symbol_text and symbol_text in title:
+        mention_bonus += 0.1
+    if company_text and company_text in title:
+        mention_bonus += 0.1
+    if company_text and company_text in summary:
+        mention_bonus += 0.05
+
+    adjusted = max(-1.0, min(1.0, score + mention_bonus))
+    return round(float(adjusted), 4)
+
+
+def _snapshot_payload(snapshot):
+    if snapshot is None or not snapshot.payload:
+        return None
+    payload = dict(snapshot.payload)
+    payload.setdefault('cached', True)
+    payload.setdefault('generated_at', snapshot.updated_at.isoformat())
+    return payload
+
+
+def _summary_price_direction(rows):
+    direction_counts = {'up': 0, 'down': 0, 'flat': 0}
+    for row in rows:
+        direction = row.get('price_direction') or 'flat'
+        direction_counts[direction] = direction_counts.get(direction, 0) + 1
+
+    if direction_counts['up'] > max(direction_counts['down'], direction_counts['flat']):
+        return 'up', '↑'
+    if direction_counts['down'] > max(direction_counts['up'], direction_counts['flat']):
+        return 'down', '↓'
+    return 'flat', '->'
+
+
+def build_portfolio_sentiment_payload(*, portfolio_id: int, user):
+    portfolio = Portfolio.objects.filter(id=portfolio_id, user=user).first()
+    if portfolio is None:
+        return None
+
+    snapshot = PortfolioSentimentSnapshot.objects.filter(portfolio=portfolio).first()
+
+    holdings = list(
+        PortfolioStock.objects.filter(portfolio=portfolio)
+        .select_related('sector')
+        .order_by('-added_at')
+    )
+    if not holdings:
+        empty_payload = {
+            'portfolio_id': portfolio.id,
+            'portfolio_name': portfolio.name,
+            'generated_at': timezone.now().isoformat(),
+            'cached': False,
+            'summary': {
+                'average_sentiment_score': 0,
+                'average_sentiment_percent': 50,
+                'avg_sentiment': 50,
+                'label': 'Neutral',
+                'tracked_stocks': 0,
+                'total_articles': 0,
+                'positive_stocks': 0,
+                'negative_stocks': 0,
+                'neutral_stocks': 0,
+                'positive_count': 0,
+                'negative_count': 0,
+                'neutral_count': 0,
+                'price_direction': 'flat',
+                'price_direction_emoji': '->',
+            },
+            'stocks': [],
+            'headlines': [],
+        }
+        PortfolioSentimentSnapshot.objects.update_or_create(
+            portfolio=portfolio,
+            defaults={'payload': empty_payload},
+        )
+        return empty_payload
+
+    stock_rows = []
+    headline_rows = []
+    successful_article_fetch = False
+    overall_article_counts = {'Positive': 0, 'Negative': 0, 'Neutral': 0}
+
+    for holding in holdings:
+        articles = get_company_news(symbol=holding.symbol, company_name=holding.company_name, limit=5)
+        quote = get_stock_snapshot(holding.symbol)
+        if articles:
+            successful_article_fetch = True
+        scored_articles = []
+        stock_scores = []
+        counts = {'Positive': 0, 'Negative': 0, 'Neutral': 0}
+
+        for article in articles:
+            sentiment_score = _score_news_article(article, symbol=holding.symbol, company_name=holding.company_name)
+            label = _sentiment_label(sentiment_score)
+            counts[label] += 1
+            overall_article_counts[label] += 1
+            stock_scores.append(sentiment_score)
+            scored_article = {
+                **article,
+                'sentiment_score': sentiment_score,
+                'sentiment_percent': round(((sentiment_score + 1) / 2) * 100, 2),
+                'sentiment_label': label,
+            }
+            scored_articles.append(scored_article)
+            headline_rows.append(
+                {
+                    'symbol': holding.symbol,
+                    'company_name': holding.company_name,
+                    **scored_article,
+                }
+            )
+
+        stock_score = round(float(np.mean(stock_scores)), 4) if stock_scores else 0.0
+        stock_label = _sentiment_label(stock_score)
+        stock_rows.append(
+            {
+                'stock_id': holding.id,
+                'symbol': holding.symbol,
+                'company_name': holding.company_name,
+                'sector': holding.sector.name,
+                'sentiment_score': stock_score,
+                'sentiment_percent': round(((stock_score + 1) / 2) * 100, 2),
+                'sentiment_label': stock_label,
+                'avg_sentiment': round(((stock_score + 1) / 2) * 100, 2),
+                'coverage_count': len(scored_articles),
+                'positive_articles': counts['Positive'],
+                'negative_articles': counts['Negative'],
+                'neutral_articles': counts['Neutral'],
+                'positive_count': counts['Positive'],
+                'negative_count': counts['Negative'],
+                'neutral_count': counts['Neutral'],
+                'current_price': quote.get('current_price'),
+                'previous_close': quote.get('previous_close'),
+                'price_change': quote.get('price_change'),
+                'price_direction': quote.get('price_direction'),
+                'price_direction_emoji': quote.get('price_direction_emoji'),
+                'articles': scored_articles,
+            }
+        )
+
+    total_articles = sum(row['coverage_count'] for row in stock_rows)
+    if not successful_article_fetch and snapshot is not None:
+        cached = _snapshot_payload(snapshot)
+        if cached:
+            return cached
+
+    average_score = round(float(np.mean([row['sentiment_score'] for row in stock_rows])), 4) if stock_rows else 0.0
+    summary_label = _sentiment_label(average_score)
+    positive_stocks = sum(1 for row in stock_rows if row['sentiment_label'] == 'Positive')
+    negative_stocks = sum(1 for row in stock_rows if row['sentiment_label'] == 'Negative')
+    neutral_stocks = sum(1 for row in stock_rows if row['sentiment_label'] == 'Neutral')
+    summary_price_direction, summary_price_direction_emoji = _summary_price_direction(stock_rows)
+
+    stock_rows.sort(key=lambda row: (row['sentiment_score'], row['coverage_count']), reverse=True)
+    headline_rows.sort(
+        key=lambda row: (
+            abs(row.get('sentiment_score') or 0),
+            row.get('published_at') or 0,
+        ),
+        reverse=True,
+    )
+
+    payload = {
+        'portfolio_id': portfolio.id,
+        'portfolio_name': portfolio.name,
+        'generated_at': timezone.now().isoformat(),
+        'cached': False,
+        'summary': {
+            'average_sentiment_score': average_score,
+            'average_sentiment_percent': round(((average_score + 1) / 2) * 100, 2),
+            'avg_sentiment': round(((average_score + 1) / 2) * 100, 2),
+            'label': summary_label,
+            'tracked_stocks': len(stock_rows),
+            'total_articles': total_articles,
+            'positive_stocks': positive_stocks,
+            'negative_stocks': negative_stocks,
+            'neutral_stocks': neutral_stocks,
+            'positive_count': overall_article_counts['Positive'],
+            'negative_count': overall_article_counts['Negative'],
+            'neutral_count': overall_article_counts['Neutral'],
+            'price_direction': summary_price_direction,
+            'price_direction_emoji': summary_price_direction_emoji,
+        },
+        'stocks': stock_rows,
+        'headlines': headline_rows[:12],
+    }
+    PortfolioSentimentSnapshot.objects.update_or_create(
+        portfolio=portfolio,
+        defaults={'payload': payload},
+    )
+    return payload
+
+
+def build_sentiment_overview_payload(*, user):
+    portfolios = (
+        Portfolio.objects.filter(user=user)
+        .annotate(stock_count=Count('stocks'))
+        .order_by('-created_at')
+    )
+
+    items = []
+    for portfolio in portfolios:
+        snapshot = getattr(portfolio, 'sentiment_snapshot', None)
+        payload = snapshot.payload if snapshot and snapshot.payload else {}
+        summary = payload.get('summary', {})
+        items.append(
+            {
+                'portfolio_id': portfolio.id,
+                'portfolio_name': portfolio.name,
+                'created_at': portfolio.created_at.isoformat(),
+                'stock_count': portfolio.stock_count,
+                'has_snapshot': bool(payload),
+                'generated_at': payload.get('generated_at'),
+                'summary': {
+                    'label': summary.get('label', 'Neutral'),
+                    'avg_sentiment': summary.get('avg_sentiment', summary.get('average_sentiment_percent', 50)),
+                    'positive_count': summary.get('positive_count', 0),
+                    'neutral_count': summary.get('neutral_count', 0),
+                    'negative_count': summary.get('negative_count', 0),
+                    'price_direction': summary.get('price_direction', 'flat'),
+                    'price_direction_emoji': summary.get('price_direction_emoji', '->'),
+                    'tracked_stocks': summary.get('tracked_stocks', portfolio.stock_count),
+                    'total_articles': summary.get('total_articles', 0),
+                },
+            }
+        )
+
+    return {
+        'portfolio_count': len(items),
+        'items': items,
+    }
+
+
+def build_company_sentiment_payload(*, symbol: str, company_name: str = ''):
+    normalized_symbol = (symbol or '').strip().upper()
+    normalized_company_name = (company_name or '').strip()
+    if not normalized_symbol:
+        return None
+
+    articles = get_company_news(symbol=normalized_symbol, company_name=normalized_company_name, limit=8)
+    quote = get_stock_snapshot(normalized_symbol)
+
+    scored_articles = []
+    counts = {'Positive': 0, 'Negative': 0, 'Neutral': 0}
+    stock_scores = []
+
+    for article in articles:
+        sentiment_score = _score_news_article(article, symbol=normalized_symbol, company_name=normalized_company_name)
+        label = _sentiment_label(sentiment_score)
+        counts[label] += 1
+        stock_scores.append(sentiment_score)
+        scored_articles.append(
+            {
+                **article,
+                'sentiment_score': sentiment_score,
+                'sentiment_percent': round(((sentiment_score + 1) / 2) * 100, 2),
+                'sentiment_label': label,
+            }
+        )
+
+    average_score = round(float(np.mean(stock_scores)), 4) if stock_scores else 0.0
+    summary_label = _sentiment_label(average_score)
+    scored_articles.sort(
+        key=lambda row: (
+            abs(row.get('sentiment_score') or 0),
+            row.get('published_at') or 0,
+        ),
+        reverse=True,
+    )
+
+    return {
+        'symbol': normalized_symbol,
+        'company_name': normalized_company_name or normalized_symbol,
+        'generated_at': timezone.now().isoformat(),
+        'summary': {
+            'label': summary_label,
+            'avg_sentiment': round(((average_score + 1) / 2) * 100, 2),
+            'average_sentiment_score': average_score,
+            'positive_count': counts['Positive'],
+            'neutral_count': counts['Neutral'],
+            'negative_count': counts['Negative'],
+            'total_articles': len(scored_articles),
+            'price_direction': quote.get('price_direction', 'flat'),
+            'price_direction_emoji': quote.get('price_direction_emoji', '->'),
+            'current_price': quote.get('current_price'),
+            'previous_close': quote.get('previous_close'),
+            'price_change': quote.get('price_change'),
+        },
+        'articles': scored_articles,
+    }
 
 
 def build_portfolio_analytics_payload(*, portfolio_id: int, user):

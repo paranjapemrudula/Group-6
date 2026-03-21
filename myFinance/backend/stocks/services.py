@@ -99,11 +99,27 @@ def _extract_quote(symbol: str):
     if avg_price and current_price is not None:
         discount_ratio = ((avg_price - current_price) / avg_price) * 100
 
+    price_change = None
+    price_direction = 'flat'
+    price_direction_emoji = '->'
+    if current_price is not None and previous_close is not None:
+        price_change = current_price - previous_close
+        if price_change > 0:
+            price_direction = 'up'
+            price_direction_emoji = '↑'
+        elif price_change < 0:
+            price_direction = 'down'
+            price_direction_emoji = '↓'
+
     return {
         'symbol': symbol,
         'avg_price': _round_value(avg_price),
         'current_price': _round_value(current_price),
         'last_value': _round_value(current_price),
+        'previous_close': _round_value(previous_close),
+        'price_change': _round_value(price_change),
+        'price_direction': price_direction,
+        'price_direction_emoji': price_direction_emoji,
         'pe_ratio': _round_value(pe_ratio),
         'high_365d': _round_value(high_365d),
         'low_365d': _round_value(low_365d),
@@ -236,6 +252,53 @@ def get_market_news(limit: int = 12):
                 )
         except Exception:
             continue
+
+    items = sorted(items, key=lambda row: row.get('published_at') or 0, reverse=True)
+    return items[:limit]
+
+
+def get_company_news(symbol: str, company_name: str = '', limit: int = 6):
+    queries = [symbol]
+    if company_name:
+        queries.append(company_name)
+
+    items = []
+    seen_links = set()
+
+    for query in queries:
+        try:
+            search = yf.Search(query=query, news_count=max(limit, 8))
+            news = getattr(search, 'news', []) or []
+        except Exception:
+            continue
+
+        for item in news:
+            link = item.get('link')
+            if not link or link in seen_links:
+                continue
+
+            seen_links.add(link)
+            thumbnail = item.get('thumbnail') or {}
+            resolutions = thumbnail.get('resolutions') or []
+            image_url = resolutions[-1].get('url') if resolutions else None
+
+            items.append(
+                {
+                    'symbol': symbol,
+                    'company_name': company_name or symbol,
+                    'title': item.get('title') or f'{symbol} market update',
+                    'summary': item.get('summary') or item.get('description') or '',
+                    'publisher': item.get('publisher') or 'Market Source',
+                    'link': link,
+                    'published_at': item.get('providerPublishTime'),
+                    'image_url': image_url,
+                }
+            )
+            if len(items) >= limit:
+                break
+
+        if len(items) >= limit:
+            break
 
     items = sorted(items, key=lambda row: row.get('published_at') or 0, reverse=True)
     return items[:limit]

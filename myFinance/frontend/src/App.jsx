@@ -5,8 +5,10 @@ import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import NewsPage from './pages/NewsPage'
 import PortfolioDetailPage from './pages/PortfolioDetailPage'
+import PortfolioSentimentReportPage from './pages/PortfolioSentimentReportPage'
 import PortfoliosPage from './pages/PortfoliosPage'
 import ProfilePage from './pages/ProfilePage'
+import SentimentPage from './pages/SentimentPage'
 import SignupPage from './pages/SignupPage'
 import './index.css'
 
@@ -34,6 +36,14 @@ function App() {
         }
       />
       <Route
+        path="/sentiment"
+        element={
+          <ProtectedRoute>
+            <SentimentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/portfolios"
         element={
           <ProtectedRoute>
@@ -46,6 +56,14 @@ function App() {
         element={
           <ProtectedRoute>
             <PortfolioDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/portfolios/:id/sentiment-report"
+        element={
+          <ProtectedRoute>
+            <PortfolioSentimentReportPage />
           </ProtectedRoute>
         }
       />
