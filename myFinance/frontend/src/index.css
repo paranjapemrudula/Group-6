@@ -838,6 +838,18 @@ a {
   margin-top: 8.5rem;
 }
 
+.totp-qr-image {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  margin: 0.5rem 0 0.75rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  padding: 0.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
 .chart-wrap {
   margin-top: 0.8rem;
   height: 320px;
