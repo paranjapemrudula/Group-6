@@ -31,7 +31,10 @@ function SignupPage() {
         setError('Could not load security questions.')
       }
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
     loadQuestions()
   }, [])
 
@@ -43,7 +46,6 @@ function SignupPage() {
     event.preventDefault()
     setLoading(true)
     setError('')
-
     try {
       const response = await signup({
         username: form.username,
@@ -115,15 +117,32 @@ function SignupPage() {
           <input id="phone_number" name="phone_number" type="text" value={form.phone_number} onChange={handleChange} />
 
           <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            minLength={8}
-          />
+          <input id="password" name="password" type="password" value={form.password} onChange={handleChange} required minLength={8} />
+
+          <label htmlFor="confirm_password">Confirm Password</label>
+          <input id="confirm_password" name="confirm_password" type="password" value={form.confirm_password} onChange={handleChange} required minLength={8} />
+
+          <label htmlFor="question_one_id">Security Question 1</label>
+          <select id="question_one_id" name="question_one_id" value={form.question_one_id} onChange={handleChange} required>
+            <option value="">Select question</option>
+            {questions.map((question) => (
+              <option key={question.id} value={question.id}>{question.question_text}</option>
+            ))}
+          </select>
+
+          <label htmlFor="question_one_answer">Answer 1</label>
+          <input id="question_one_answer" name="question_one_answer" type="text" value={form.question_one_answer} onChange={handleChange} required />
+
+          <label htmlFor="question_two_id">Security Question 2</label>
+          <select id="question_two_id" name="question_two_id" value={form.question_two_id} onChange={handleChange} required>
+            <option value="">Select question</option>
+            {questions.map((question) => (
+              <option key={question.id} value={question.id}>{question.question_text}</option>
+            ))}
+          </select>
+
+          <label htmlFor="question_two_answer">Answer 2</label>
+          <input id="question_two_answer" name="question_two_answer" type="text" value={form.question_two_answer} onChange={handleChange} required />
 
           <label htmlFor="confirm_password">Confirm Password</label>
           <input

@@ -13,6 +13,7 @@ from .views import (
 
 urlpatterns = [
     path('sectors/', SectorListView.as_view(), name='sector_list'),
+    path('sectors/<int:sector_id>/stocks/', StocksBySectorView.as_view(), name='sector_stocks'),
     path('market/overview/', MarketOverviewView.as_view(), name='market_overview'),
     path('market/news/', MarketNewsView.as_view(), name='market_news'),
     path('stocks/suggest/', StockSuggestionView.as_view(), name='stock_suggest'),

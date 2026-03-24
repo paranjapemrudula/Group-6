@@ -383,6 +383,21 @@ def _summary_price_direction(rows):
     return 'flat', '->'
 
 
+def _confidence_score(*, stock_score: float, counts: dict, coverage_count: int):
+    if coverage_count <= 0:
+        return 0.0
+
+    dominant_count = max(counts.values()) if counts else 0
+    dominant_ratio = dominant_count / coverage_count if coverage_count else 0
+    score_strength = abs(stock_score)
+
+    confidence = 35.0
+    confidence += min(25.0, coverage_count * 5.0)
+    confidence += dominant_ratio * 25.0
+    confidence += score_strength * 15.0
+    return round(min(100.0, confidence), 2)
+
+
 def build_portfolio_sentiment_payload(*, portfolio_id: int, user):
     portfolio = Portfolio.objects.filter(id=portfolio_id, user=user).first()
     if portfolio is None:
@@ -463,6 +478,11 @@ def build_portfolio_sentiment_payload(*, portfolio_id: int, user):
 
         stock_score = round(float(np.mean(stock_scores)), 4) if stock_scores else 0.0
         stock_label = _sentiment_label(stock_score)
+        confidence_score = _confidence_score(
+            stock_score=stock_score,
+            counts=counts,
+            coverage_count=len(scored_articles),
+        )
         stock_rows.append(
             {
                 'stock_id': holding.id,
@@ -480,6 +500,7 @@ def build_portfolio_sentiment_payload(*, portfolio_id: int, user):
                 'positive_count': counts['Positive'],
                 'negative_count': counts['Negative'],
                 'neutral_count': counts['Neutral'],
+                'confidence_score': confidence_score,
                 'current_price': quote.get('current_price'),
                 'previous_close': quote.get('previous_close'),
                 'price_change': quote.get('price_change'),
@@ -496,6 +517,7 @@ def build_portfolio_sentiment_payload(*, portfolio_id: int, user):
             return cached
 
     average_score = round(float(np.mean([row['sentiment_score'] for row in stock_rows])), 4) if stock_rows else 0.0
+    average_confidence_score = round(float(np.mean([row['confidence_score'] for row in stock_rows])), 2) if stock_rows else 0.0
     summary_label = _sentiment_label(average_score)
     positive_stocks = sum(1 for row in stock_rows if row['sentiment_label'] == 'Positive')
     negative_stocks = sum(1 for row in stock_rows if row['sentiment_label'] == 'Negative')
@@ -520,6 +542,7 @@ def build_portfolio_sentiment_payload(*, portfolio_id: int, user):
             'average_sentiment_score': average_score,
             'average_sentiment_percent': round(((average_score + 1) / 2) * 100, 2),
             'avg_sentiment': round(((average_score + 1) / 2) * 100, 2),
+            'average_confidence_score': average_confidence_score,
             'label': summary_label,
             'tracked_stocks': len(stock_rows),
             'total_articles': total_articles,
@@ -611,6 +634,11 @@ def build_company_sentiment_payload(*, symbol: str, company_name: str = ''):
 
     average_score = round(float(np.mean(stock_scores)), 4) if stock_scores else 0.0
     summary_label = _sentiment_label(average_score)
+    confidence_score = _confidence_score(
+        stock_score=average_score,
+        counts=counts,
+        coverage_count=len(scored_articles),
+    )
     scored_articles.sort(
         key=lambda row: (
             abs(row.get('sentiment_score') or 0),
@@ -627,6 +655,7 @@ def build_company_sentiment_payload(*, symbol: str, company_name: str = ''):
             'label': summary_label,
             'avg_sentiment': round(((average_score + 1) / 2) * 100, 2),
             'average_sentiment_score': average_score,
+            'confidence_score': confidence_score,
             'positive_count': counts['Positive'],
             'neutral_count': counts['Neutral'],
             'negative_count': counts['Negative'],
