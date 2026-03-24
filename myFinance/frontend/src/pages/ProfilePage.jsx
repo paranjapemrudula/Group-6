@@ -8,6 +8,9 @@ function ProfilePage() {
   const [user, setUser] = useState(getCurrentUser())
   const [portfolios, setPortfolios] = useState([])
   const [stockTotals, setStockTotals] = useState({})
+  const [totpSetup, setTotpSetup] = useState(null)
+  const [totpOtp, setTotpOtp] = useState('')
+  const [totpMessage, setTotpMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -17,10 +20,7 @@ function ProfilePage() {
         const [meResponse, portfolioResponse] = await Promise.all([api.get('/api/me/'), api.get('/api/portfolios/')])
         setUser(meResponse.data)
         setPortfolios(portfolioResponse.data)
-
-        const stocksResponses = await Promise.all(
-          portfolioResponse.data.map((item) => api.get(`/api/portfolios/${item.id}/stocks/`))
-        )
+        const stocksResponses = await Promise.all(portfolioResponse.data.map((item) => api.get(`/api/portfolios/${item.id}/stocks/`)))
         const totals = {}
         portfolioResponse.data.forEach((portfolio, index) => {
           totals[portfolio.id] = stocksResponses[index].data.length
@@ -32,20 +32,40 @@ function ProfilePage() {
         setLoading(false)
       }
     }
-
     loadProfile()
   }, [])
 
-  const totalStocks = useMemo(
-    () => Object.values(stockTotals).reduce((sum, current) => sum + Number(current || 0), 0),
-    [stockTotals]
-  )
-
+  const totalStocks = useMemo(() => Object.values(stockTotals).reduce((sum, current) => sum + Number(current || 0), 0), [stockTotals])
   const profileInsight = useMemo(() => {
     if (portfolios.length === 0) return 'Start by creating at least one portfolio for a focused strategy.'
     if (totalStocks < 3) return 'You are just getting started. Add more stocks to unlock richer analytics.'
     return 'Great progress. Your profile is ready for advanced chart-based analysis in the next phase.'
   }, [portfolios.length, totalStocks])
+  const qrCodeUrl = useMemo(() => {
+    if (!totpSetup?.otpauth_url) return ''
+    return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(totpSetup.otpauth_url)}`
+  }, [totpSetup])
+
+  const handleSetupAuthenticator = async () => {
+    try {
+      const response = await api.post('/api/totp/setup/')
+      setTotpSetup(response.data)
+      setTotpMessage('')
+    } catch {
+      setTotpMessage('Could not start authenticator setup.')
+    }
+  }
+
+  const handleVerifyAuthenticator = async () => {
+    try {
+      const response = await api.post('/api/totp/verify/', { otp: totpOtp })
+      setTotpMessage(response.data.message)
+      setUser((prev) => ({ ...prev, totp_enabled: true }))
+      setTotpOtp('')
+    } catch (err) {
+      setTotpMessage(err?.response?.data?.detail || 'Could not verify OTP.')
+    }
+  }
 
   return (
     <AppShell title="Profile">
@@ -54,9 +74,7 @@ function ProfilePage() {
           <h2>Profile Overview</h2>
           <p>Account snapshot, portfolio health, and personalized investing notes.</p>
         </div>
-        <Link className="button button-secondary" to="/portfolios">
-          Open Portfolios
-        </Link>
+        <Link className="button button-secondary" to="/portfolios">Open Portfolios</Link>
       </section>
 
       {error ? <p className="form-error">{error}</p> : null}
@@ -67,22 +85,39 @@ function ProfilePage() {
           <section className="dashboard-grid">
             <article className="feature-card">
               <h3>Account</h3>
-              <p>
-                <strong>User:</strong> {user?.username || 'N/A'}
-              </p>
-              <p>
-                <strong>Email:</strong> {user?.email || 'N/A'}
-              </p>
-              <p>
-                <strong>Joined:</strong>{' '}
-                {user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}
-              </p>
+              <p><strong>User:</strong> {user?.username || 'N/A'}</p>
+              <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
+              <p><strong>Joined:</strong> {user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}</p>
+              <p><strong>Authenticator:</strong> {user?.totp_enabled ? 'Enabled' : 'Not enabled'}</p>
             </article>
             <article className="feature-card">
               <h3>My Insights</h3>
               <p>{profileInsight}</p>
               <p className="muted">Keep at least one core portfolio and one experimental portfolio for better discipline.</p>
             </article>
+          </section>
+
+          <section className="feature-card">
+            <h3>Authenticator Setup</h3>
+            <p>Use an authenticator app as your primary password reset option, with security questions and recovery codes as fallback.</p>
+            <div className="actions">
+              <button className="button" type="button" onClick={handleSetupAuthenticator}>
+                {user?.totp_enabled ? 'Show Authenticator QR' : 'Generate Authenticator Secret'}
+              </button>
+            </div>
+            {totpSetup ? (
+              <>
+                <p><strong>Secret:</strong> {totpSetup.secret}</p>
+                {qrCodeUrl ? <img className="totp-qr-image" src={qrCodeUrl} alt="Authenticator QR code" /> : null}
+                <p className="muted">Scan this QR code in your authenticator app. If needed, you can still enter the secret manually. This setup reuses the same secret instead of rotating it on repeat clicks.</p>
+                <label htmlFor="totp-otp">Authenticator OTP</label>
+                <input id="totp-otp" type="text" value={totpOtp} onChange={(event) => setTotpOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} />
+                <div className="actions">
+                  <button className="button button-secondary" type="button" onClick={handleVerifyAuthenticator}>Verify OTP</button>
+                </div>
+              </>
+            ) : null}
+            {totpMessage ? <p className="muted">{totpMessage}</p> : null}
           </section>
 
           <section className="feature-card">

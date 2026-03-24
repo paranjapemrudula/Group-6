@@ -1,12 +1,15 @@
 from rest_framework import serializers
 
-from .models import PortfolioStock, Sector
+from .models import PortfolioStock, Sector, StockUniverse
 
 
 class SectorSerializer(serializers.ModelSerializer):
+    universe_stock_count = serializers.IntegerField(read_only=True)
+    description = serializers.CharField(read_only=True)
+
     class Meta:
         model = Sector
-        fields = ('id', 'name')
+        fields = ('id', 'name', 'description', 'universe_stock_count')
 
 
 class PortfolioStockSerializer(serializers.ModelSerializer):
@@ -30,3 +33,24 @@ class PortfolioStockSerializer(serializers.ModelSerializer):
             'added_at',
         )
         read_only_fields = ('id', 'sector_name', 'added_at')
+
+
+class StockUniverseSerializer(serializers.ModelSerializer):
+    sector_name = serializers.CharField(source='sector.name', read_only=True)
+
+    class Meta:
+        model = StockUniverse
+        fields = (
+            'id',
+            'symbol',
+            'company_name',
+            'sector_name',
+            'market',
+            'series',
+            'isin_code',
+            'source_file',
+            'raw_sector_label',
+            'classification_source',
+            'classification_confidence',
+            'is_active',
+        )

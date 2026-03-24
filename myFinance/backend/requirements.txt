@@ -8,3 +8,4 @@ numpy
 scikit-learn
 openai
 psycopg[binary]
+openpyxl

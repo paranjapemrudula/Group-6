@@ -23,5 +23,6 @@ urlpatterns = [
     path('api/', include('portfolios.urls')),
     path('api/', include('stocks.urls')),
     path('api/', include('analysis.urls')),
+    path('api/', include('recommendations.urls')),
     path('api/', include('core.urls')),
 ]

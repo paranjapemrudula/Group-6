@@ -6,7 +6,9 @@ import { clearAuth, getCurrentUser } from '../lib/auth'
 const protectedLinks = [
   { to: '/home', label: 'Home' },
   { to: '/news', label: 'News' },
+  { to: '/sectors', label: 'Sectors' },
   { to: '/sentiment', label: 'Sentiment' },
+  { to: '/recommendations', label: 'Recommendations' },
   { to: '/portfolios', label: 'Portfolios' },
   { to: '/profile', label: 'Profile' },
 ]
