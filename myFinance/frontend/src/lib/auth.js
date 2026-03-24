@@ -40,13 +40,13 @@ export async function login(credentials) {
 
 export async function signup(payload) {
   const response = await publicApi.post('/api/signup/', payload)
-  const { access, refresh, user } = response.data
+  const { access, refresh, user, recovery_codes } = response.data
 
   localStorage.setItem(ACCESS_TOKEN_KEY, access)
   localStorage.setItem(REFRESH_TOKEN_KEY, refresh)
   localStorage.setItem(USER_KEY, JSON.stringify(user))
   setAuthHeader(access)
-  return user
+  return { user, recovery_codes: recovery_codes || [] }
 }
 
 export function initializeAuth() {

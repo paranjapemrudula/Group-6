@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import PublicNavbar from '../components/PublicNavbar'
 import { login } from '../lib/auth'
@@ -62,6 +63,9 @@ function LoginPage() {
           <button className="button" type="submit" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
+          <p className="auth-foot">
+            Forgot your password? <Link to="/forgot-password">Reset it here</Link>
+          </p>
         </form>
       </div>
     </div>
