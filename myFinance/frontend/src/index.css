@@ -850,6 +850,126 @@ a {
   box-shadow: var(--shadow-soft);
 }
 
+<<<<<<< HEAD
+=======
+.recommendation-list {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+}
+
+.recommendation-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.95rem;
+}
+
+.recommendation-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.recommendation-card-head h4 {
+  margin: 0;
+}
+
+.recommendation-card-head h4 span {
+  font-size: 0.96rem;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.recommendation-buy {
+  background: rgba(74, 222, 128, 0.18);
+  color: #166534;
+}
+
+.recommendation-hold {
+  background: rgba(59, 130, 246, 0.14);
+  color: #1d4ed8;
+}
+
+.recommendation-watch {
+  background: rgba(245, 158, 11, 0.16);
+  color: #92400e;
+}
+
+.recommendation-reduce {
+  background: rgba(248, 113, 113, 0.18);
+  color: #991b1b;
+}
+
+.sectors-toolbar {
+  align-items: stretch;
+}
+
+.sector-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 180px;
+}
+
+.sector-card-active {
+  border-color: rgba(10, 147, 150, 0.45);
+  box-shadow: var(--shadow-deep);
+  transform: translateY(-3px);
+}
+
+.sector-command {
+  display: block;
+  margin-top: 0.9rem;
+  padding: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 12px;
+  border: 1px dashed rgba(0, 95, 115, 0.26);
+  background: rgba(255, 255, 255, 0.78);
+  color: #0c4450;
+}
+
+.sector-success {
+  margin: 0.8rem 0 0;
+  color: #166534;
+  font-weight: 600;
+}
+
+.sector-add-button {
+  min-width: 110px;
+}
+
+.sector-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(8, 31, 37, 0.46);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.sector-modal {
+  width: min(460px, 96vw);
+  padding: 1.2rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(239, 248, 245, 0.9));
+  box-shadow: var(--shadow-deep);
+}
+
+.sector-modal h3 {
+  margin-top: 0;
+}
+
+.sector-modal .inline-input {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
 .chart-wrap {
   margin-top: 0.8rem;
   height: 320px;
