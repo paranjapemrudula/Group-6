@@ -31,10 +31,10 @@ function SignupPage() {
         setError('Could not load security questions.')
       }
     }
-<<<<<<< HEAD
+// <<<<<<< HEAD
 
-=======
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
+// =======
+// >>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
     loadQuestions()
   }, [])
 

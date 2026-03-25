@@ -9,10 +9,7 @@ from urllib.parse import quote
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
-<<<<<<< HEAD
 from django.utils import timezone
-=======
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -38,7 +35,7 @@ User = get_user_model()
 
 DEFAULT_SECURITY_QUESTIONS = [
     'What was the name of your first school?',
-    'What is your mother’s birth city?',
+    'What is your mother\'s birth city?',
     'What was your childhood nickname?',
     'What is the name of your favorite teacher?',
 ]
@@ -83,31 +80,20 @@ def build_totp_code(secret, timestamp=None, step=30, digits=6):
 def verify_totp(secret, otp, window=4):
     now = int(time.time())
     for offset in range(-window, window + 1):
-<<<<<<< HEAD
         candidate_time = now + (offset * 30)
         if build_totp_code(secret, timestamp=candidate_time) == otp:
-=======
-        if build_totp_code(secret, timestamp=now + (offset * 30)) == otp:
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             return True
     return False
 
 
 def create_reset_session(*, user, method):
-<<<<<<< HEAD
     session = PasswordResetSession.objects.create(
-=======
-    return PasswordResetSession.objects.create(
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         user=user,
         token=secrets.token_urlsafe(32),
         method=method,
         expires_at=PasswordResetSession.default_expiry(),
     )
-<<<<<<< HEAD
     return session
-=======
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
 
 
 class SecurityQuestionListView(APIView):
@@ -115,12 +101,8 @@ class SecurityQuestionListView(APIView):
 
     def get(self, request):
         ensure_default_security_questions()
-<<<<<<< HEAD
         questions = SecurityQuestion.objects.filter(is_active=True)
         return Response(SecurityQuestionSerializer(questions, many=True).data)
-=======
-        return Response(SecurityQuestionSerializer(SecurityQuestion.objects.filter(is_active=True), many=True).data)
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
 
 
 class SignupView(APIView):
@@ -170,7 +152,7 @@ class TotpSetupView(APIView):
             {
                 'secret': secret,
                 'otpauth_url': otpauth_url,
-                'message': 'Scan the QR code with your authenticator app and verify one OTP to enable it. If authenticator is already enabled, this shows your existing setup instead of creating a new secret.',
+                'message': 'Scan the QR code with your authenticator app and verify one OTP to enable it.',
             }
         )
 
@@ -207,14 +189,10 @@ class PasswordResetStartView(APIView):
             {
                 'username': user.username,
                 'totp_enabled': profile.totp_enabled,
-<<<<<<< HEAD
                 'security_questions': [
                     {'question_id': item.question_id, 'question_text': item.question.question_text}
                     for item in answers
                 ],
-=======
-                'security_questions': [{'question_id': item.question_id, 'question_text': item.question.question_text} for item in answers],
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             }
         )
 
@@ -246,12 +224,8 @@ class PasswordResetFallbackView(APIView):
         user = User.objects.filter(username=serializer.validated_data['username']).first()
         if user is None:
             return Response({'detail': 'User not found.'}, status=404)
-<<<<<<< HEAD
         answers = serializer.validated_data['security_answers']
         if not match_security_answers(user=user, answers=answers):
-=======
-        if not match_security_answers(user=user, answers=serializer.validated_data['security_answers']):
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             return Response({'detail': 'Security answers did not match.'}, status=400)
         if not use_recovery_code(user=user, raw_code=serializer.validated_data['recovery_code']):
             return Response({'detail': 'Invalid or already-used recovery code.'}, status=400)

@@ -1,10 +1,8 @@
 import { useState } from 'react'
-<<<<<<< HEAD
-import { Link } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom'
-=======
+
+// import { Link } from 'react-router-dom'
 import { Link, useNavigate } from 'react-router-dom'
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
+
 import PublicNavbar from '../components/PublicNavbar'
 import { login } from '../lib/auth'
 

@@ -15,8 +15,11 @@ from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env")
+
+print("DB HOST:", os.environ.get("DJANGO_DB_HOST"))
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -110,14 +113,30 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'ENGINE': os.environ.get('DJANGO_DB_ENGINE', os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3')),
+        'NAME': os.environ.get('DJANGO_DB_NAME', os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3')),
+        'USER': os.environ.get('DJANGO_DB_USER', os.environ.get('DB_USER', '')),
+        'PASSWORD': os.environ.get('DJANGO_DB_PASSWORD', os.environ.get('DB_PASSWORD', '')),
+        'HOST': os.environ.get('DJANGO_DB_HOST', os.environ.get('DB_HOST', '127.0.0.1')),
+        'PORT': os.environ.get('DJANGO_DB_PORT', os.environ.get('DB_PORT', '5432')),
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('DB_NAME'),
+#         'USER': os.environ.get('DB_USER'),
+#         'PASSWORD': os.environ.get('DB_PASSWORD'),
+#         'HOST': os.environ.get('DB_HOST', 'localhost'),
+#         'PORT': os.environ.get('DB_PORT', '5432'),
+#         'OPTIONS': {
+#             'sslmode': os.environ.get('DB_SSLMODE', 'require'),
+#         }
+#     }
+# }
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
