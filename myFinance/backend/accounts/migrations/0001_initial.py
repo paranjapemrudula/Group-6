@@ -19,13 +19,9 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
-<<<<<<< HEAD
             options={
                 'ordering': ['id'],
             },
-=======
-            options={'ordering': ['id']},
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         ),
         migrations.CreateModel(
             name='PasswordResetSession',
@@ -36,7 +32,6 @@ class Migration(migrations.Migration):
                 ('is_used', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('expires_at', models.DateTimeField()),
-<<<<<<< HEAD
                 (
                     'user',
                     models.ForeignKey(
@@ -49,11 +44,6 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ['-created_at'],
             },
-=======
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='password_reset_sessions', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={'ordering': ['-created_at']},
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         ),
         migrations.CreateModel(
             name='RecoveryCode',
@@ -63,7 +53,6 @@ class Migration(migrations.Migration):
                 ('is_used', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('used_at', models.DateTimeField(blank=True, null=True)),
-<<<<<<< HEAD
                 (
                     'user',
                     models.ForeignKey(
@@ -76,11 +65,6 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ['-created_at'],
             },
-=======
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='recovery_codes', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={'ordering': ['-created_at']},
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         ),
         migrations.CreateModel(
             name='UserProfile',
@@ -91,7 +75,6 @@ class Migration(migrations.Migration):
                 ('totp_secret', models.CharField(blank=True, max_length=64)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-<<<<<<< HEAD
                 (
                     'user',
                     models.OneToOneField(
@@ -104,11 +87,6 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ['user__username'],
             },
-=======
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={'ordering': ['user__username']},
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         ),
         migrations.CreateModel(
             name='UserSecurityAnswer',
@@ -117,7 +95,6 @@ class Migration(migrations.Migration):
                 ('answer_hash', models.CharField(max_length=128)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-<<<<<<< HEAD
                 (
                     'question',
                     models.ForeignKey(
@@ -139,11 +116,5 @@ class Migration(migrations.Migration):
                 'ordering': ['question_id'],
                 'unique_together': {('user', 'question')},
             },
-=======
-                ('question', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_answers', to='accounts.securityquestion')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='security_answers', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={'ordering': ['question_id'], 'unique_together': {('user', 'question')}},
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         ),
     ]

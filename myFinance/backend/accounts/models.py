@@ -6,15 +6,11 @@ from django.utils import timezone
 
 
 class UserProfile(models.Model):
-<<<<<<< HEAD
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='profile',
     )
-=======
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
     phone_number = models.CharField(max_length=32, blank=True)
     totp_enabled = models.BooleanField(default=False)
     totp_secret = models.CharField(max_length=64, blank=True)
@@ -41,7 +37,6 @@ class SecurityQuestion(models.Model):
 
 
 class UserSecurityAnswer(models.Model):
-<<<<<<< HEAD
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -52,10 +47,6 @@ class UserSecurityAnswer(models.Model):
         on_delete=models.CASCADE,
         related_name='user_answers',
     )
-=======
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='security_answers')
-    question = models.ForeignKey(SecurityQuestion, on_delete=models.CASCADE, related_name='user_answers')
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
     answer_hash = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -64,7 +55,6 @@ class UserSecurityAnswer(models.Model):
         ordering = ['question_id']
         unique_together = [('user', 'question')]
 
-<<<<<<< HEAD
     def __str__(self):
         return f'{self.user.username} -> {self.question_id}'
 
@@ -75,11 +65,6 @@ class RecoveryCode(models.Model):
         on_delete=models.CASCADE,
         related_name='recovery_codes',
     )
-=======
-
-class RecoveryCode(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recovery_codes')
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
     code_hash = models.CharField(max_length=128)
     is_used = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -97,14 +82,10 @@ class RecoveryCode(models.Model):
 class PasswordResetSession(models.Model):
     METHOD_TOTP = 'totp'
     METHOD_FALLBACK = 'fallback'
-<<<<<<< HEAD
     METHOD_CHOICES = [
         (METHOD_TOTP, 'Authenticator'),
         (METHOD_FALLBACK, 'Fallback'),
     ]
-=======
-    METHOD_CHOICES = [(METHOD_TOTP, 'Authenticator'), (METHOD_FALLBACK, 'Fallback')]
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

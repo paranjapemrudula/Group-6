@@ -25,12 +25,12 @@ class SectorListView(generics.ListAPIView):
     def get_queryset(self):
         market = (self.request.query_params.get('market') or '').strip().upper()
         queryset = Sector.objects.all()
-        if market:
+        if market and market != 'ALL':
             queryset = queryset.filter(universe_stocks__market=market)
         return queryset.annotate(
             universe_stock_count=Count(
                 'universe_stocks',
-                filter=Q(universe_stocks__is_active=True) & (Q(universe_stocks__market=market) if market else Q()),
+                filter=Q(universe_stocks__is_active=True) & (Q(universe_stocks__market=market) if market and market != 'ALL' else Q()),
                 distinct=True,
             )
         ).order_by('name')
@@ -61,7 +61,7 @@ class StocksBySectorView(APIView):
         sector = get_object_or_404(Sector, id=sector_id)
         market = (request.query_params.get('market') or '').strip().upper()
         universe_queryset = StockUniverse.objects.filter(sector=sector, is_active=True).select_related('sector')
-        if market:
+        if market and market != 'ALL':
             universe_queryset = universe_queryset.filter(market=market)
         universe_queryset = universe_queryset.order_by('company_name')
 
@@ -79,7 +79,7 @@ class StocksBySectorView(APIView):
         return Response(
             {
                 'sector': {'id': sector.id, 'name': sector.name, 'universe_stock_count': 0},
-                'stocks': get_stocks_by_sector(sector_name=sector.name),
+                'stocks': get_stocks_by_sector(sector_name=sector.name, market=market or None),
             }
         )
 

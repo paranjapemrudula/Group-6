@@ -4,8 +4,7 @@ django-cors-headers
 djangorestframework-simplejwt
 yfinance
 pandas
+openpyxl
 numpy
 scikit-learn
 openai
-psycopg[binary]
-openpyxl

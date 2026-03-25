@@ -90,23 +90,9 @@ function ForgotPasswordPage() {
           {step === 'start' ? (
             <form onSubmit={handleStart}>
               <label htmlFor="reset-username">Username</label>
-<<<<<<< HEAD
-              <input
-                id="reset-username"
-                type="text"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                required
-              />
-              {error ? <p className="form-error">{error}</p> : null}
-              <button className="button" type="submit" disabled={loading}>
-                {loading ? 'Checking...' : 'Continue'}
-              </button>
-=======
               <input id="reset-username" type="text" value={username} onChange={(event) => setUsername(event.target.value)} required />
               {error ? <p className="form-error">{error}</p> : null}
               <button className="button" type="submit" disabled={loading}>{loading ? 'Checking...' : 'Continue'}</button>
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             </form>
           ) : null}
 
@@ -114,137 +100,49 @@ function ForgotPasswordPage() {
             <form onSubmit={handleVerify}>
               {startData?.totp_enabled ? (
                 <div className="actions">
-<<<<<<< HEAD
-                  <button
-                    className={`button ${verificationMode === 'totp' ? '' : 'button-secondary'}`}
-                    type="button"
-                    onClick={() => setVerificationMode('totp')}
-                  >
-                    Authenticator
-                  </button>
-                  <button
-                    className={`button ${verificationMode === 'fallback' ? '' : 'button-secondary'}`}
-                    type="button"
-                    onClick={() => setVerificationMode('fallback')}
-                  >
-                    Questions + Recovery Code
-                  </button>
-=======
                   <button className={`button ${verificationMode === 'totp' ? '' : 'button-secondary'}`} type="button" onClick={() => setVerificationMode('totp')}>Authenticator</button>
                   <button className={`button ${verificationMode === 'fallback' ? '' : 'button-secondary'}`} type="button" onClick={() => setVerificationMode('fallback')}>Questions + Recovery Code</button>
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
                 </div>
               ) : null}
 
               {verificationMode === 'totp' ? (
                 <>
                   <label htmlFor="reset-otp">Authenticator OTP</label>
-<<<<<<< HEAD
-                  <input
-                    id="reset-otp"
-                    type="text"
-                    value={otp}
-                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                    maxLength={6}
-                    required
-                  />
-=======
                   <input id="reset-otp" type="text" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} required />
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
                 </>
               ) : (
                 <>
                   {(startData?.security_questions || []).map((question) => (
                     <div key={question.question_id}>
                       <label htmlFor={`question-${question.question_id}`}>{question.question_text}</label>
-<<<<<<< HEAD
-                      <input
-                        id={`question-${question.question_id}`}
-                        type="text"
-                        value={answers[question.question_id] || ''}
-                        onChange={(event) =>
-                          setAnswers((prev) => ({ ...prev, [question.question_id]: event.target.value }))
-                        }
-                        required
-                      />
-                    </div>
-                  ))}
-                  <label htmlFor="recovery-code">Recovery Code</label>
-                  <input
-                    id="recovery-code"
-                    type="text"
-                    value={recoveryCode}
-                    onChange={(event) => setRecoveryCode(event.target.value)}
-                    required
-                  />
-=======
                       <input id={`question-${question.question_id}`} type="text" value={answers[question.question_id] || ''} onChange={(event) => setAnswers((prev) => ({ ...prev, [question.question_id]: event.target.value }))} required />
                     </div>
                   ))}
                   <label htmlFor="recovery-code">Recovery Code</label>
                   <input id="recovery-code" type="text" value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value)} required />
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
                 </>
               )}
 
               {error ? <p className="form-error">{error}</p> : null}
-<<<<<<< HEAD
-              <button className="button" type="submit" disabled={loading}>
-                {loading ? 'Verifying...' : 'Verify'}
-              </button>
-=======
               <button className="button" type="submit" disabled={loading}>{loading ? 'Verifying...' : 'Verify'}</button>
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             </form>
           ) : null}
 
           {step === 'confirm' ? (
             <form onSubmit={handleConfirm}>
               <label htmlFor="new-password">New Password</label>
-<<<<<<< HEAD
-              <input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                required
-                minLength={8}
-              />
-
-              <label htmlFor="confirm-new-password">Confirm Password</label>
-              <input
-                id="confirm-new-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-                minLength={8}
-              />
-
-              {error ? <p className="form-error">{error}</p> : null}
-              <button className="button" type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
-              </button>
-=======
               <input id="new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength={8} />
               <label htmlFor="confirm-new-password">Confirm Password</label>
               <input id="confirm-new-password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} />
               {error ? <p className="form-error">{error}</p> : null}
               <button className="button" type="submit" disabled={loading}>{loading ? 'Updating...' : 'Update Password'}</button>
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             </form>
           ) : null}
 
           {step === 'done' ? (
             <>
               <p>{success}</p>
-<<<<<<< HEAD
-              <p className="auth-foot">
-                Return to <Link to="/login">Login</Link>
-              </p>
-=======
               <p className="auth-foot">Return to <Link to="/login">Login</Link></p>
->>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             </>
           ) : null}
         </div>

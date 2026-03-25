@@ -10,10 +10,18 @@ export const publicApi = axios.create({
   baseURL: API_BASE_URL,
 })
 
+publicApi.interceptors.request.use((config) => {
+  if (config.headers) {
+    delete config.headers.Authorization
+  }
+  return config
+})
+
 export function setAuthHeader(token) {
   if (token) {
     api.defaults.headers.common.Authorization = `Bearer ${token}`
   } else {
     delete api.defaults.headers.common.Authorization
   }
+  delete publicApi.defaults.headers.common.Authorization
 }

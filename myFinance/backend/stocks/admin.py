@@ -5,7 +5,7 @@ from .models import PortfolioStock, Sector, SectorAlias, SectorClassificationLog
 
 @admin.register(Sector)
 class SectorAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description')
+    list_display = ('id', 'name', 'description')
     search_fields = ('name',)
 
 
@@ -13,16 +13,16 @@ class SectorAdmin(admin.ModelAdmin):
 class StockUniverseAdmin(admin.ModelAdmin):
     list_display = (
         'symbol',
+        'quote_symbol',
         'company_name',
         'sector',
         'market',
         'classification_source',
         'classification_confidence',
-        'source_file',
         'is_active',
     )
     list_filter = ('market', 'sector', 'classification_source', 'is_active')
-    search_fields = ('symbol', 'company_name', 'isin_code', 'raw_sector_label')
+    search_fields = ('symbol', 'quote_symbol', 'company_name', 'isin_code', 'raw_sector_label')
 
 
 @admin.register(PortfolioStock)

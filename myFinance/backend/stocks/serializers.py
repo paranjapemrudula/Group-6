@@ -43,6 +43,7 @@ class StockUniverseSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'symbol',
+            'quote_symbol',
             'company_name',
             'sector_name',
             'market',
@@ -52,5 +53,6 @@ class StockUniverseSerializer(serializers.ModelSerializer):
             'raw_sector_label',
             'classification_source',
             'classification_confidence',
+            'weight',
             'is_active',
         )
