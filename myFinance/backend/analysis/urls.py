@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    ChatbotFeedbackView,
     ChatbotView,
     ClusteringAnalysisView,
     CompanySentimentView,
@@ -13,6 +14,7 @@ from .views import (
 
 urlpatterns = [
     path('chatbot/', ChatbotView.as_view(), name='chatbot'),
+    path('chatbot/feedback/', ChatbotFeedbackView.as_view(), name='chatbot_feedback'),
     path('sentiment/company/', CompanySentimentView.as_view(), name='company_sentiment'),
     path('sentiment/overview/', SentimentOverviewView.as_view(), name='sentiment_overview'),
     path('portfolios/<int:portfolio_id>/analytics/', PortfolioAnalyticsView.as_view(), name='portfolio_analytics'),

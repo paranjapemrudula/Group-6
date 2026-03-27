@@ -48,7 +48,14 @@ class RecommendationApiTests(TestCase):
         self.assertEqual(response.data['portfolio_name'], 'Growth Basket')
         self.assertEqual(len(response.data['recommendations']), 1)
         self.assertEqual(response.data['recommendations'][0]['symbol'], 'INFY.NS')
-        self.assertIn(response.data['recommendations'][0]['label'], {'Buy', 'Hold', 'Watch', 'Reduce'})
+        self.assertIn(response.data['recommendations'][0]['label'], {'Buy', 'Hold', 'Watch', 'Sell'})
+        self.assertIn('profitability_score', response.data['recommendations'][0])
+        self.assertIn('forecast_score', response.data['recommendations'][0])
+        self.assertIn('risk_score', response.data['recommendations'][0])
+        self.assertIn('diversification_score', response.data['recommendations'][0])
+        self.assertIn('portfolio_improvements', response.data)
+        self.assertIn('opportunities', response.data)
+        self.assertIn('risk_alerts', response.data)
 
     def test_recommendation_overview_returns_portfolios(self):
         response = self.client.get('/api/recommendations/overview/')
@@ -56,3 +63,4 @@ class RecommendationApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['portfolio_count'], 1)
         self.assertEqual(len(response.data['items']), 1)
+        self.assertIn('portfolio_score', response.data['items'][0]['summary'])

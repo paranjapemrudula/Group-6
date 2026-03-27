@@ -49,7 +49,7 @@ class ChatbotApiTests(TestCase):
         response = self.client.post('/api/chatbot/', {'question': 'Write me a poem about cats.', 'history': []}, format='json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['category'], 'out_of_scope')
-        self.assertIn('finance-related question', response.data['answer'])
+        self.assertIn('investment-related questions', response.data['answer'])
 
     def test_rejects_sensitive_question(self):
         response = self.client.post(
@@ -80,7 +80,87 @@ class ChatbotApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['category'], 'finance')
         self.assertIn('1 portfolios', response.data['answer'])
-        self.assertEqual(response.data['model'], 'rule-based-fallback')
+        self.assertEqual(response.data['model'], 'local-portfolio-analyst')
+
+    @patch('analysis.chatbot.get_market_news')
+    @patch('analysis.chatbot.get_market_overview')
+    @patch('analysis.chatbot.build_portfolio_recommendations')
+    @patch('analysis.chatbot._portfolio_analytics_context')
+    def test_routes_risk_alert_question_to_recommendation_report(
+        self,
+        mock_portfolio_context,
+        mock_build_recommendations,
+        mock_market_overview,
+        mock_market_news,
+    ):
+        mock_market_overview.return_value = {'top_stocks': []}
+        mock_market_news.return_value = [{'title': 'Market update'}]
+        mock_portfolio_context.return_value = {
+            'generated_at': '2026-03-27T10:00:00+05:30',
+            'primary_portfolio_id': Portfolio.objects.get(user=self.user).id,
+            'portfolio_count': 1,
+            'portfolio_names': ['Long Term'],
+            'holding_count': 1,
+            'holdings': [],
+            'total_invested': 4500.0,
+            'total_current': 4800.0,
+            'total_pnl': 300.0,
+            'total_return_percent': 6.67,
+            'sector_breakdown': [{'sector': 'Technology', 'value': 4800.0, 'weight_percent': 100.0, 'count': 1}],
+            'diversification_label': 'highly concentrated',
+            'risk_label': 'High',
+            'weighted_volatility': 38.0,
+            'weighted_drawdown': 22.0,
+            'weighted_probability_of_loss': 54.0,
+        }
+        mock_build_recommendations.return_value = {
+            'summary': {'portfolio_score': 48.0},
+            'recommendations': [],
+            'portfolio_improvements': [],
+            'opportunities': [],
+            'risk_alerts': [
+                {
+                    'title': 'High volatility alert for INFY.NS',
+                    'detail': 'Annualized volatility is 42.0%, which increases downside risk.',
+                }
+            ],
+        }
+
+        response = self.client.post(
+            '/api/chatbot/',
+            {'question': 'What risk alerts do you see in my portfolio?', 'history': []},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['route'], 'risk_alerts')
+        self.assertIn('High volatility alert for INFY.NS', response.data['answer'])
+
+    @patch('analysis.chatbot.get_market_news')
+    @patch('analysis.chatbot.get_market_overview')
+    def test_market_trend_question_uses_live_market_logic(
+        self,
+        mock_market_overview,
+        mock_market_news,
+    ):
+        mock_market_overview.return_value = {
+            'top_stocks': [
+                {'symbol': 'INFY.NS', 'last_value': 1580.0, 'pe_ratio': 22.0},
+                {'symbol': 'TCS.NS', 'last_value': 4025.0, 'pe_ratio': 28.0},
+            ]
+        }
+        mock_market_news.return_value = [{'title': 'Indian equities trade mixed as IT stocks stay active'}]
+
+        response = self.client.post(
+            '/api/chatbot/',
+            {'question': 'what is market trend now', 'history': []},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['route'], 'market_trend')
+        self.assertIn('INFY.NS', response.data['answer'])
+        self.assertNotIn('Diversification means', response.data['answer'])
 
     @patch('analysis.services.get_stock_snapshot')
     def test_portfolio_analytics_returns_pe_and_clusters(self, mock_get_stock_snapshot):

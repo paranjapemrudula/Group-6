@@ -7,11 +7,15 @@ function AssistantChatbot() {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
   const [pending, setPending] = useState(false)
+  const [feedbackMessage, setFeedbackMessage] = useState('')
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
       text:
         'Hello. I am here to help with stocks, market news, and your portfolio. Please ask anything related to finance in simple words.',
+      interactionId: null,
+      feedbackStatus: 'unrated',
+      feedbackPending: false,
     },
   ])
 
@@ -45,6 +49,9 @@ function AssistantChatbot() {
         {
           role: 'assistant',
           text: response.data?.answer || 'I could not generate a response right now.',
+          interactionId: response.data?.meta?.interaction_id || null,
+          feedbackStatus: 'unrated',
+          feedbackPending: false,
         },
       ])
     } catch {
@@ -53,10 +60,65 @@ function AssistantChatbot() {
         {
           role: 'assistant',
           text: 'I am sorry, but I could not respond right now. Please try again in a moment.',
+          interactionId: null,
+          feedbackStatus: 'unrated',
+          feedbackPending: false,
         },
       ])
     } finally {
       setPending(false)
+    }
+  }
+
+  const sendFeedback = async (messageIndex, feedbackStatus) => {
+    const target = messages[messageIndex]
+    if (!target?.interactionId || target?.feedbackPending) return
+
+    setFeedbackMessage('')
+    setMessages((prev) =>
+      prev.map((item, index) =>
+        index === messageIndex
+          ? {
+              ...item,
+              feedbackPending: true,
+            }
+          : item
+      )
+    )
+
+    try {
+      await api.post('/api/chatbot/feedback/', {
+        interaction_id: target.interactionId,
+        feedback_status: feedbackStatus,
+      })
+      setMessages((prev) =>
+        prev.map((item, index) =>
+          index === messageIndex
+            ? {
+                ...item,
+                feedbackStatus,
+                feedbackPending: false,
+              }
+            : item
+        )
+      )
+      setFeedbackMessage(feedbackStatus === 'positive' ? 'Marked as useful.' : 'Marked as not useful.')
+    } catch (error) {
+      setMessages((prev) =>
+        prev.map((item, index) =>
+          index === messageIndex
+            ? {
+                ...item,
+                feedbackPending: false,
+              }
+            : item
+        )
+      )
+      const detail =
+        error?.response?.data?.detail ||
+        error?.response?.data?.feedback_status?.[0] ||
+        'Could not save feedback right now.'
+      setFeedbackMessage(detail)
     }
   }
 
@@ -86,9 +148,30 @@ function AssistantChatbot() {
             {messages.map((msg, index) => (
               <div key={`${msg.role}-${index}`} className={`assistant-msg assistant-${msg.role}`}>
                 <p>{msg.text}</p>
+                {msg.role === 'assistant' && msg.interactionId ? (
+                  <div className="assistant-feedback">
+                    <button
+                      type="button"
+                      className={`assistant-feedback-button ${msg.feedbackStatus === 'positive' ? 'assistant-feedback-active' : ''}`}
+                      onClick={() => sendFeedback(index, 'positive')}
+                      disabled={msg.feedbackPending}
+                    >
+                      {msg.feedbackPending && msg.feedbackStatus !== 'positive' ? 'Saving...' : 'Useful'}
+                    </button>
+                    <button
+                      type="button"
+                      className={`assistant-feedback-button ${msg.feedbackStatus === 'negative' ? 'assistant-feedback-active' : ''}`}
+                      onClick={() => sendFeedback(index, 'negative')}
+                      disabled={msg.feedbackPending}
+                    >
+                      {msg.feedbackPending && msg.feedbackStatus !== 'negative' ? 'Saving...' : 'Not useful'}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ))}
             {pending ? <p className="assistant-thinking">Thinking carefully...</p> : null}
+            {feedbackMessage ? <p className="assistant-feedback-message">{feedbackMessage}</p> : null}
           </div>
 
           <form className="assistant-form" onSubmit={handleSubmit}>

@@ -89,10 +89,15 @@ class Migration(migrations.Migration):
                 max_length=16,
             ),
         ),
-        migrations.AddField(
-            model_name='stockuniverse',
-            name='raw_sector_label',
-            field=models.CharField(blank=True, max_length=255),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddField(
+                    model_name='stockuniverse',
+                    name='raw_sector_label',
+                    field=models.CharField(blank=True, max_length=255),
+                ),
+            ],
         ),
         migrations.CreateModel(
             name='SectorAlias',

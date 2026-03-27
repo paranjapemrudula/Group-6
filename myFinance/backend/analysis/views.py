@@ -1,6 +1,8 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 from .chatbot import generate_chatbot_reply
+from .models import ChatInteractionLog
 from .services import (
     build_company_sentiment_payload,
     build_sentiment_overview_payload,
@@ -19,6 +21,37 @@ class ChatbotView(APIView):
         history = request.data.get('history', [])
         payload = generate_chatbot_reply(user=request.user, question=question, history=history)
         return Response(payload)
+
+
+class ChatbotFeedbackView(APIView):
+    def post(self, request):
+        interaction_id = request.data.get('interaction_id')
+        feedback_status = (request.data.get('feedback_status') or '').strip().lower()
+        feedback_note = request.data.get('feedback_note', '')
+
+        if feedback_status not in {
+            ChatInteractionLog.FEEDBACK_POSITIVE,
+            ChatInteractionLog.FEEDBACK_NEGATIVE,
+            ChatInteractionLog.FEEDBACK_UNRATED,
+        }:
+            return Response({'detail': 'feedback_status must be positive, negative, or unrated.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        interaction = ChatInteractionLog.objects.filter(id=interaction_id).first()
+        if interaction is None:
+            return Response({'detail': 'Chat interaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if interaction.user_id is not None and interaction.user_id != request.user.id:
+            return Response({'detail': 'You cannot rate another user interaction.'}, status=status.HTTP_403_FORBIDDEN)
+
+        interaction.feedback_status = feedback_status
+        interaction.feedback_note = str(feedback_note or '').strip()
+        interaction.save(update_fields=['feedback_status', 'feedback_note'])
+        return Response(
+            {
+                'id': interaction.id,
+                'feedback_status': interaction.feedback_status,
+                'feedback_note': interaction.feedback_note,
+            }
+        )
 
 
 class PortfolioAnalyticsView(APIView):

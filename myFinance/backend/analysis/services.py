@@ -15,6 +15,9 @@ from stocks.services import get_stock_snapshot
 
 from .models import PortfolioSentimentSnapshot
 
+_FINBERT_PIPELINE = None
+_FINBERT_READY = None
+
 def normalize_timeframe(timeframe: str):
     value = (timeframe or '').strip().upper().replace(' ', '')
     aliases = {
@@ -342,8 +345,54 @@ def _score_text_sentiment(text: str):
     return round(float(max(-1.0, min(1.0, score))), 4)
 
 
+def _finbert_pipeline():
+    global _FINBERT_PIPELINE, _FINBERT_READY
+    if _FINBERT_READY is False:
+        return None
+    if _FINBERT_PIPELINE is not None:
+        return _FINBERT_PIPELINE
+    if not getattr(settings, 'CHATBOT_USE_FINBERT', False):
+        _FINBERT_READY = False
+        return None
+    try:
+        from transformers import pipeline
+
+        _FINBERT_PIPELINE = pipeline(
+            'text-classification',
+            model=getattr(settings, 'CHATBOT_FINBERT_MODEL', 'ProsusAI/finbert'),
+        )
+        _FINBERT_READY = True
+        return _FINBERT_PIPELINE
+    except Exception:
+        _FINBERT_READY = False
+        return None
+
+
+def _score_text_sentiment_ml(text: str):
+    model = _finbert_pipeline()
+    if model is None:
+        return None
+    content = str(text or '').strip()
+    if not content:
+        return 0.0
+    try:
+        result = model(content[:1200])[0]
+    except Exception:
+        return None
+    label = str(result.get('label', '')).lower()
+    score = float(result.get('score') or 0)
+    if 'positive' in label:
+        return round(score, 4)
+    if 'negative' in label:
+        return round(-score, 4)
+    return 0.0
+
+
 def _score_news_article(article: dict, symbol: str, company_name: str):
-    score = _score_text_sentiment(f"{article.get('title', '')} {article.get('summary', '')}")
+    text = f"{article.get('title', '')} {article.get('summary', '')}"
+    score = _score_text_sentiment_ml(text)
+    if score is None:
+        score = _score_text_sentiment(text)
     title = (article.get('title') or '').lower()
     summary = (article.get('summary') or '').lower()
     symbol_text = (symbol or '').lower().replace('.ns', '')

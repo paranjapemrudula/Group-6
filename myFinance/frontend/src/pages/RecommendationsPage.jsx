@@ -106,6 +106,8 @@ function RecommendationsPage() {
                   <h3>{item.portfolio_name}</h3>
                   <p>Top action: {item.summary?.top_action || 'Watch'}</p>
                   <p>{item.summary?.recommendation_count || 0} recommendation{item.summary?.recommendation_count === 1 ? '' : 's'}</p>
+                  <p>Portfolio score: {item.summary?.portfolio_score ?? 50}</p>
+                  <p>Opportunities: {item.summary?.opportunity_count || 0} | Risk alerts: {item.summary?.risk_alert_count || 0}</p>
                 </div>
                 <div className="actions">
                   <button className="button" type="button" onClick={() => setSelectedPortfolioId(String(item.portfolio_id))}>
@@ -126,8 +128,52 @@ function RecommendationsPage() {
               <div className="analysis-panel-head">
                 <h3>{report.portfolio_name} Recommendation Report</h3>
                 <p className="muted">
-                  Top action: <strong>{report.summary?.top_action || 'Watch'}</strong>
+                  Top action: <strong>{report.summary?.top_action || 'Watch'}</strong> | Portfolio score: <strong>{report.summary?.portfolio_score ?? 50}</strong>
                 </p>
+              </div>
+              <div className="dashboard-grid">
+                <article className="feature-card">
+                  <h4>Portfolio Improvements</h4>
+                  {report.portfolio_improvements?.length ? (
+                    <ul className="dash-list">
+                      {report.portfolio_improvements.map((item) => (
+                        <li key={item.title}>
+                          <strong>{item.title}:</strong> {item.detail}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No improvement suggestions available right now.</p>
+                  )}
+                </article>
+                <article className="feature-card">
+                  <h4>New Opportunities</h4>
+                  {report.opportunities?.length ? (
+                    <ul className="dash-list">
+                      {report.opportunities.map((item) => (
+                        <li key={item.symbol}>
+                          <strong>{item.symbol}</strong> ({item.sector}) score {item.opportunity_score}: {item.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No new opportunities were detected from the current market universe.</p>
+                  )}
+                </article>
+                <article className="feature-card">
+                  <h4>Risk Alerts</h4>
+                  {report.risk_alerts?.length ? (
+                    <ul className="dash-list">
+                      {report.risk_alerts.map((item) => (
+                        <li key={`${item.title}-${item.symbol}`}>
+                          <strong>{item.title}:</strong> {item.detail}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No major risk alerts were generated for this portfolio.</p>
+                  )}
+                </article>
               </div>
               <div className="recommendation-list">
                 {report.recommendations?.map((item) => (
@@ -142,6 +188,13 @@ function RecommendationsPage() {
                     <p className="muted">
                       Sentiment {item.sentiment_percent}% | Price {item.price_direction_emoji || '->'} {(item.price_direction || 'flat').toUpperCase()} |
                       P/E {item.pe_ratio ?? '-'} | Discount {item.discount_ratio ?? '-'}
+                    </p>
+                    <p className="muted">
+                      Invested {item.invested_amount ?? '-'} | Current {item.current_value ?? '-'} | P/L {item.profit_loss ?? '-'} | Return {item.return_percent ?? '-'}%
+                    </p>
+                    <p className="muted">
+                      Profitability {item.profitability_score} | Forecast {item.forecast_score} ({item.forecast_direction}) | Sentiment {item.sentiment_score} |
+                      Risk {item.risk_score} | Diversification {item.diversification_score}
                     </p>
                     <ul className="dash-list">
                       {(item.reasons || []).map((reason) => (

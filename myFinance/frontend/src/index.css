@@ -1414,6 +1414,42 @@ a {
   font-size: 0.93rem;
 }
 
+.assistant-feedback {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.assistant-feedback-button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text-0);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.assistant-feedback-button:hover {
+  background: rgba(148, 210, 189, 0.22);
+}
+
+.assistant-feedback-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.assistant-feedback-active {
+  background: rgba(148, 210, 189, 0.34);
+  border-color: rgba(10, 147, 150, 0.4);
+}
+
+.assistant-feedback-message {
+  margin: 0.35rem 0 0;
+  color: var(--text-1);
+  font-size: 0.8rem;
+}
+
 .assistant-assistant,
 .assistant-bot {
   background: rgba(148, 210, 189, 0.2);

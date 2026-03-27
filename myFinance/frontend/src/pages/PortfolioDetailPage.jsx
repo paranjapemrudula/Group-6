@@ -24,6 +24,8 @@ function PortfolioDetailPage() {
   const [sectors, setSectors] = useState([])
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
+  const [showSuggestionState, setShowSuggestionState] = useState(false)
+  const [searchLocked, setSearchLocked] = useState(false)
   const [editingStockId, setEditingStockId] = useState(null)
   const [quoteBySymbol, setQuoteBySymbol] = useState({})
   const [analysisPanel, setAnalysisPanel] = useState({
@@ -108,11 +110,19 @@ function PortfolioDetailPage() {
   }, [stocks])
 
   useEffect(() => {
-    if (query.trim().length < 1) {
+    if (searchLocked) {
       setSuggestions([])
+      setShowSuggestionState(false)
       return
     }
 
+    if (query.trim().length < 1) {
+      setSuggestions([])
+      setShowSuggestionState(false)
+      return
+    }
+
+    setShowSuggestionState(true)
     const timer = setTimeout(async () => {
       try {
         const response = await api.get(`/api/stocks/suggest/?q=${encodeURIComponent(query.trim())}`)
@@ -128,32 +138,95 @@ function PortfolioDetailPage() {
   const handleAddFromSuggestion = async (item) => {
     setAdding(true)
     setError('')
+    setSearchLocked(true)
+    setQuery(`${item.symbol} - ${item.company_name}`)
+    setSuggestions([])
+    setShowSuggestionState(false)
     try {
-      let resolvedSectorId = item.sector && sectorMap[item.sector] ? Number(sectorMap[item.sector]) : null
+      const sectorName = item.sector_name || item.sector || ''
+      let resolvedSectorId = sectorName && sectorMap[sectorName] ? Number(sectorMap[sectorName]) : null
       if (!resolvedSectorId && sectors.length > 0) {
         resolvedSectorId = Number(sectors[0].id)
       }
 
-      const quoteResponse = await api.get(`/api/stocks/quote/?symbol=${encodeURIComponent(item.symbol)}`)
+      const normalizedIndiaSymbol =
+        item.market === 'INDIA' && !String(item.symbol || '').includes('.')
+          ? `${String(item.symbol).toUpperCase()}.NS`
+          : String(item.symbol || '').toUpperCase()
+      const quoteResponse = await api.get(`/api/stocks/quote/?symbol=${encodeURIComponent(normalizedIndiaSymbol)}`)
       const quotePrice = quoteResponse.data.current_price || quoteResponse.data.avg_price || 0
 
       const payload = {
-        symbol: item.symbol.trim().toUpperCase(),
+        symbol: quoteResponse.data.actual_symbol || normalizedIndiaSymbol,
         company_name: item.company_name,
-        sector_id: resolvedSectorId,
         buy_price: Number(quotePrice).toFixed(2),
         quantity: 1,
+      }
+      if (resolvedSectorId) {
+        payload.sector_id = resolvedSectorId
       }
 
       const response = await api.post(`/api/portfolios/${id}/stocks/`, payload)
       setStocks((prev) => [response.data, ...prev])
       setQuery('')
       setSuggestions([])
-    } catch {
-      setError('Could not add stock from suggestion.')
+      setShowSuggestionState(false)
+      setSearchLocked(false)
+    } catch (err) {
+      setSearchLocked(false)
+      const detail =
+        err?.response?.data?.sector_id?.[0] ||
+        err?.response?.data?.symbol?.[0] ||
+        err?.response?.data?.company_name?.[0] ||
+        err?.response?.data?.detail ||
+        'Could not add stock from suggestion.'
+      setError(detail)
     } finally {
       setAdding(false)
     }
+  }
+
+  const resolveSuggestionFromQuery = async (queryText) => {
+    const normalizedQuery = queryText.trim()
+    if (!normalizedQuery) return null
+
+    if (suggestions.length > 0) {
+      const exactMatch =
+        suggestions.find((item) => item.symbol?.toLowerCase() === normalizedQuery.toLowerCase()) ||
+        suggestions.find((item) => item.company_name?.toLowerCase() === normalizedQuery.toLowerCase())
+      return exactMatch || suggestions[0]
+    }
+
+    const response = await api.get(`/api/stocks/suggest/?q=${encodeURIComponent(normalizedQuery)}`)
+    const remoteSuggestions = Array.isArray(response.data) ? response.data : []
+    const exactMatch =
+      remoteSuggestions.find((item) => item.symbol?.toLowerCase() === normalizedQuery.toLowerCase()) ||
+      remoteSuggestions.find((item) => item.company_name?.toLowerCase() === normalizedQuery.toLowerCase())
+    return exactMatch || remoteSuggestions[0] || null
+  }
+
+  const handleSubmitSearch = async (event) => {
+    event.preventDefault()
+    if (adding) return
+
+    setError('')
+    try {
+      const candidate = await resolveSuggestionFromQuery(query)
+      if (!candidate) {
+        setError('No matching stock suggestion was found.')
+        return
+      }
+      await handleAddFromSuggestion(candidate)
+    } catch {
+      setSearchLocked(false)
+      setError('Could not add stock from search.')
+    }
+  }
+
+  const handleSelectSuggestion = async (event, item) => {
+    event.preventDefault()
+    if (adding) return
+    await handleAddFromSuggestion(item)
   }
 
   const handleDeleteStock = async (stockId) => {
@@ -393,38 +466,45 @@ function PortfolioDetailPage() {
       </section>
 
       <section className="stock-search-panel">
-        <div className="search-wrap">
+        <form className="search-wrap" onSubmit={handleSubmitSearch}>
           <input
             name="query"
             type="text"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setSearchLocked(false)
+              setQuery(event.target.value)
+              setShowSuggestionState(true)
+            }}
             placeholder="Search by symbol or company name (e.g., TCS, Infosys, Reliance)"
           />
-          {suggestions.length > 0 ? (
+          <button className="button" type="submit" disabled={adding || !query.trim()}>
+            {adding ? 'Adding...' : 'Add Stock'}
+          </button>
+          {suggestions.length > 0 && showSuggestionState ? (
             <div className="suggestions-box">
               {suggestions.map((item) => (
                 <button
                   key={`${item.symbol}-${item.company_name}`}
                   type="button"
                   className="suggestion-item suggestion-item-rich"
-                  onClick={() => handleAddFromSuggestion(item)}
+                  onMouseDown={(event) => handleSelectSuggestion(event, item)}
                   disabled={adding}
                 >
                   <div>
                     <strong>{item.symbol}</strong>
                     <span>{item.company_name}</span>
                   </div>
-                  <div className="suggestion-meta">{item.sector || 'Sector mapped on add'}</div>
+                  <div className="suggestion-meta">{item.sector_name || item.sector || 'Sector mapped on add'}</div>
                 </button>
               ))}
             </div>
-          ) : query ? (
+          ) : query && showSuggestionState ? (
             <div className="suggestions-box">
               <div className="suggestion-empty">No suggestions found.</div>
             </div>
           ) : null}
-        </div>
+        </form>
       </section>
 
       {error ? <p className="form-error">{error}</p> : null}

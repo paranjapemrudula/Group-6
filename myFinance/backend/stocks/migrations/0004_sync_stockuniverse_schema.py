@@ -1,46 +1,24 @@
 from django.db import migrations
 
+FIELDS = ['nse_code','bse_code','yfinance_symbol','series','isin_code','source_file','is_active','created_at','updated_at']
 
-SYNC_FORWARD_SQL = """
-ALTER TABLE stocks_stockuniverse
-    ADD COLUMN IF NOT EXISTS quote_symbol varchar(32) NOT NULL DEFAULT '',
-    ADD COLUMN IF NOT EXISTS source_file varchar(255) NOT NULL DEFAULT '',
-    ADD COLUMN IF NOT EXISTS raw_sector_label varchar(255) NOT NULL DEFAULT '',
-    ADD COLUMN IF NOT EXISTS series varchar(20) NOT NULL DEFAULT '',
-    ADD COLUMN IF NOT EXISTS isin_code varchar(32) NOT NULL DEFAULT '',
-    ADD COLUMN IF NOT EXISTS weight numeric(12, 4) NULL,
-    ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT TRUE,
-    ADD COLUMN IF NOT EXISTS imported_at timestamp with time zone NULL;
+def sync_stockuniverse_schema(apps, schema_editor):
+    model = apps.get_model('stocks', 'StockUniverse')
+    table_name = model._meta.db_table
+    connection = schema_editor.connection
+    if table_name not in set(connection.introspection.table_names()):
+        return
+    with connection.cursor() as cursor:
+        columns = {column.name for column in connection.introspection.get_table_description(cursor, table_name)}
+    for field_name in FIELDS:
+        if field_name not in columns:
+            field = model._meta.get_field(field_name)
+            schema_editor.add_field(model, field)
+            columns.add(field.column)
 
-UPDATE stocks_stockuniverse
-SET quote_symbol = CASE
-    WHEN quote_symbol = '' AND market = 'INDIA' AND position('.' in symbol) = 0 THEN symbol || '.NS'
-    WHEN quote_symbol = '' THEN symbol
-    ELSE quote_symbol
-END;
-
-UPDATE stocks_stockuniverse
-SET imported_at = NOW()
-WHERE imported_at IS NULL;
-
-ALTER TABLE stocks_stockuniverse
-    ALTER COLUMN imported_at SET DEFAULT NOW(),
-    ALTER COLUMN imported_at SET NOT NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS stocks_stockuniverse_market_symbol_uidx
-    ON stocks_stockuniverse (market, symbol);
-"""
-
-SYNC_REVERSE_SQL = """
-DROP INDEX IF EXISTS stocks_stockuniverse_market_symbol_uidx;
-"""
-
+def noop_reverse(apps, schema_editor):
+    return
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ('stocks', '0003_stockuniverse'),
-    ]
-
-    operations = [
-        migrations.RunSQL(SYNC_FORWARD_SQL, SYNC_REVERSE_SQL),
-    ]
+    dependencies = [('stocks', '0003_stockuniverse')]
+    operations = [migrations.RunPython(sync_stockuniverse_schema, noop_reverse)] 

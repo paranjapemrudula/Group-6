@@ -8,3 +8,6 @@ openpyxl
 numpy
 scikit-learn
 openai
+transformers
+torch
+langgraph

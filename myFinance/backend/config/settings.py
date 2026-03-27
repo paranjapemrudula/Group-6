@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
@@ -114,6 +115,20 @@ DATABASES = {
         },
     }
 }
+
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'test_db.sqlite3',
+    }
+    MIGRATION_MODULES = {
+        'accounts': None,
+        'analysis': None,
+        'core': None,
+        'portfolios': None,
+        'recommendations': None,
+        'stocks': None,
+    }
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -199,6 +214,15 @@ CHATBOT_ALLOWED_ROUTE_PATHS = get_env_list(
     'CHATBOT_ALLOWED_ROUTE_PATHS',
     '/home,/news,/portfolios,/profile',
 )
+CHATBOT_HISTORY_LIMIT = int(os.environ.get('CHATBOT_HISTORY_LIMIT', 6))
+CHATBOT_RETRIEVAL_LIMIT = int(os.environ.get('CHATBOT_RETRIEVAL_LIMIT', 3))
+CHATBOT_RECOMMENDATION_CACHE_TTL_SECONDS = int(os.environ.get('CHATBOT_RECOMMENDATION_CACHE_TTL_SECONDS', 300))
+CHATBOT_LOCAL_ONLY = get_env_bool('CHATBOT_LOCAL_ONLY', default=True)
+CHATBOT_USE_OLLAMA = get_env_bool('CHATBOT_USE_OLLAMA', default=False)
+CHATBOT_OLLAMA_URL = os.environ.get('CHATBOT_OLLAMA_URL', 'http://127.0.0.1:11434/api/generate')
+CHATBOT_OLLAMA_MODEL = os.environ.get('CHATBOT_OLLAMA_MODEL', 'qwen2.5:7b')
+CHATBOT_USE_FINBERT = get_env_bool('CHATBOT_USE_FINBERT', default=False)
+CHATBOT_FINBERT_MODEL = os.environ.get('CHATBOT_FINBERT_MODEL', 'ProsusAI/finbert')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = get_env_bool('DJANGO_SESSION_COOKIE_SECURE', default=not DEBUG)
