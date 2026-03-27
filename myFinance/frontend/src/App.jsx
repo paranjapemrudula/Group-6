@@ -12,8 +12,11 @@ import PortfoliosPage from './pages/PortfoliosPage'
 import ProfilePage from './pages/ProfilePage'
 import RecommendationsPage from './pages/RecommendationsPage'
 import SectorsPage from './pages/SectorsPage'
+import SectorDetailPage from './pages/SectorDetailPage'
 import SentimentPage from './pages/SentimentPage'
 import SignupPage from './pages/SignupPage'
+import QualityPage from './pages/QualityPage'
+import QualitySectorsPage from './pages/QualitySectorsPage'
 import './index.css'
 
 function App() {
@@ -45,6 +48,30 @@ function App() {
         element={
           <ProtectedRoute>
             <SectorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sectors/:id"
+        element={
+          <ProtectedRoute>
+            <SectorDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sectors/quality/top"
+        element={
+          <ProtectedRoute>
+            <QualitySectorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quality"
+        element={
+          <ProtectedRoute>
+            <QualityPage />
           </ProtectedRoute>
         }
       />

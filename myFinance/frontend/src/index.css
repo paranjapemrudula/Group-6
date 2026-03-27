@@ -981,6 +981,31 @@ a {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+.analysis-subpanel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.cluster-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 600;
+}
+
+.cluster-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
 .dashboard-hero {
   display: flex;
   justify-content: space-between;

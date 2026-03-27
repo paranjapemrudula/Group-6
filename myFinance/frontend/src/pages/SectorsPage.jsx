@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import { api, publicApi } from '../lib/api'
 
@@ -27,6 +27,7 @@ function SectorsPage() {
     selectedPortfolioId: '',
   })
   const stockListRef = useRef(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const loadSectors = async () => {
@@ -240,8 +241,23 @@ function SectorsPage() {
                   <p>{sector.universe_stock_count || 0} imported stock{sector.universe_stock_count === 1 ? '' : 's'}</p>
                 </div>
                 <div className="actions">
-                  <button className="button" type="button" onClick={() => setSelectedSector(sector)}>
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => navigate(`/sectors/${sector.id}`)}
+                  >
                     View Stocks
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={() =>
+                      navigate('/sectors/quality/top', {
+                        state: { market },
+                      })
+                    }
+                  >
+                    Quality
                   </button>
                 </div>
               </article>
@@ -267,7 +283,23 @@ function SectorsPage() {
             <p className="muted">
               Showing {filteredStocks.length} of {stocks.length} stock{stocks.length === 1 ? '' : 's'}
             </p>
-          </div>
+            <div className="actions">
+              <button
+                type="button"
+                className="button button-secondary"
+                  onClick={() =>
+                    navigate('/quality', {
+                      state: {
+                        sector: selectedSector,
+                        stocks: filteredStocks.slice(0, 10),
+                      },
+                    })
+                  }
+                >
+                  Quality: Top 10
+                </button>
+              </div>
+            </div>
 
           {loadingStocks ? <p>Loading sector stocks...</p> : null}
 
