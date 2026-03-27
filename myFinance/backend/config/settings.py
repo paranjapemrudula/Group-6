@@ -63,7 +63,6 @@ INSTALLED_APPS = [
     'stocks',
     'analysis',
     'recommendations',
-    'chatbot',
 ]
 
 MIDDLEWARE = [

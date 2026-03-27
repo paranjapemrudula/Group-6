@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import { api, publicApi } from '../lib/api'
 
@@ -28,6 +28,7 @@ function SectorsPage() {
   })
   const stockListRef = useRef(null)
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     const loadSectors = async () => {
@@ -119,6 +120,25 @@ function SectorsPage() {
       open: false,
       stock: null,
       selectedPortfolioId: '',
+    })
+  }
+
+  const navigateToCreatePortfolio = () => {
+    if (!portfolioModal.stock) {
+      navigate('/portfolios')
+      return
+    }
+    navigate('/portfolios', {
+      state: {
+        pendingStock: {
+          symbol: portfolioModal.stock.symbol,
+          company_name: portfolioModal.stock.company_name,
+          market: portfolioModal.stock.market,
+          sector_id: selectedSector?.id || null,
+          sector_name: selectedSector?.name || portfolioModal.stock.sector || '',
+        },
+        returnTo: location.pathname,
+      },
     })
   }
 
@@ -379,11 +399,13 @@ function SectorsPage() {
                 </strong>
               </p>
             ) : null}
-            {!portfolioOptions.length ? (
-              <p className="form-error">
-                No portfolios found. <Link to="/portfolios">Create a portfolio first</Link>.
-              </p>
-            ) : null}
+            <p className={portfolioOptions.length ? 'muted' : 'form-error'}>
+              {portfolioOptions.length ? 'Want a different destination? ' : 'No portfolios found. '}
+              <button type="button" className="button-link" onClick={navigateToCreatePortfolio}>
+                Create a portfolio and add this stock there
+              </button>
+              .
+            </p>
             <div className="actions">
               <button
                 className="button"

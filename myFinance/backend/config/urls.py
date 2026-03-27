@@ -26,7 +26,6 @@ urlpatterns = [
     path('api/', include('stocks.urls')),
     path('api/', include('analysis.urls')),
     path('api/', include('recommendations.urls')),
-    path('api/', include('chatbot.urls')),
     path('api/', include('core.urls')),
     path('', healthcheck, name='root-healthcheck'),
 ]

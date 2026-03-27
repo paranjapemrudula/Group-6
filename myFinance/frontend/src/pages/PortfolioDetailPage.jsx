@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   BarElement,
   CategoryScale,
@@ -19,6 +19,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 function PortfolioDetailPage() {
   const timeframeOptions = ['1D', '1H', '1M']
   const { id } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [portfolio, setPortfolio] = useState(null)
   const [stocks, setStocks] = useState([])
   const [sectors, setSectors] = useState([])
@@ -50,6 +52,8 @@ function PortfolioDetailPage() {
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
+  const [actionMessage, setActionMessage] = useState(location.state?.actionMessage || '')
+  const [pendingStockHandled, setPendingStockHandled] = useState(false)
 
   const sectorMap = useMemo(() => {
     const map = {}
@@ -128,8 +132,12 @@ function PortfolioDetailPage() {
   const handleAddFromSuggestion = async (item) => {
     setAdding(true)
     setError('')
+    setActionMessage('')
     try {
-      let resolvedSectorId = item.sector && sectorMap[item.sector] ? Number(sectorMap[item.sector]) : null
+      let resolvedSectorId = item.sector_id ? Number(item.sector_id) : null
+      if (!resolvedSectorId && item.sector && sectorMap[item.sector]) {
+        resolvedSectorId = Number(sectorMap[item.sector])
+      }
       if (!resolvedSectorId && sectors.length > 0) {
         resolvedSectorId = Number(sectors[0].id)
       }
@@ -149,12 +157,40 @@ function PortfolioDetailPage() {
       setStocks((prev) => [response.data, ...prev])
       setQuery('')
       setSuggestions([])
+      setActionMessage(`${payload.symbol} was added to ${portfolio?.name || 'this portfolio'}.`)
     } catch {
       setError('Could not add stock from suggestion.')
     } finally {
       setAdding(false)
     }
   }
+
+  useEffect(() => {
+    const pendingStock = location.state?.pendingStock
+    if (!pendingStock || loading || adding || pendingStockHandled || !sectors.length) {
+      return
+    }
+
+    const addPendingStock = async () => {
+      await handleAddFromSuggestion(pendingStock)
+      setPendingStockHandled(true)
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+
+    addPendingStock()
+  }, [location, loading, adding, pendingStockHandled, sectors, navigate])
+
+  useEffect(() => {
+    if (!location.state?.actionMessage) {
+      return
+    }
+    navigate(location.pathname, {
+      replace: true,
+      state: location.state?.pendingStock
+        ? { pendingStock: location.state.pendingStock, createdFromShortcut: location.state.createdFromShortcut }
+        : {},
+    })
+  }, [location, navigate])
 
   const handleDeleteStock = async (stockId) => {
     try {
@@ -427,6 +463,7 @@ function PortfolioDetailPage() {
         </div>
       </section>
 
+      {actionMessage ? <p className="sector-success">{actionMessage}</p> : null}
       {error ? <p className="form-error">{error}</p> : null}
       {loading ? <p>Loading stocks...</p> : null}
 

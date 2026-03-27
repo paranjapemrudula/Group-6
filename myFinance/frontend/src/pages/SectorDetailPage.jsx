@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import { api, publicApi } from '../lib/api'
 
 function SectorDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [sector, setSector] = useState(null)
   const [stocks, setStocks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -67,6 +68,25 @@ function SectorDetailPage() {
   }
 
   const closePortfolioModal = () => setPortfolioModal({ open: false, stock: null, selectedPortfolioId: '' })
+
+  const navigateToCreatePortfolio = () => {
+    if (!portfolioModal.stock) {
+      navigate('/portfolios')
+      return
+    }
+    navigate('/portfolios', {
+      state: {
+        pendingStock: {
+          symbol: portfolioModal.stock.symbol,
+          company_name: portfolioModal.stock.company_name,
+          market: portfolioModal.stock.market,
+          sector_id: sector?.id || null,
+          sector_name: sector?.name || '',
+        },
+        returnTo: location.pathname,
+      },
+    })
+  }
 
   const handleConfirmAddToPortfolio = async () => {
     if (!portfolioModal.stock || !portfolioModal.selectedPortfolioId) return
@@ -215,11 +235,13 @@ function SectorDetailPage() {
                 </strong>
               </p>
             ) : null}
-            {!portfolioOptions.length ? (
-              <p className="form-error">
-                No portfolios found. <Link to="/portfolios">Create a portfolio first</Link>.
-              </p>
-            ) : null}
+            <p className={portfolioOptions.length ? 'muted' : 'form-error'}>
+              {portfolioOptions.length ? 'Want a different destination? ' : 'No portfolios found. '}
+              <button type="button" className="button-link" onClick={navigateToCreatePortfolio}>
+                Create a portfolio and add this stock there
+              </button>
+              .
+            </p>
             <div className="actions">
               <button
                 className="button"
