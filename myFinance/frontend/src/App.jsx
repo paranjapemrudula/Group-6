@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
-import HomePage from './pages/HomePage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import HomePage from './pages/HomePage'
+// import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import NewsPage from './pages/NewsPage'
@@ -9,8 +10,13 @@ import PortfolioDetailPage from './pages/PortfolioDetailPage'
 import PortfolioSentimentReportPage from './pages/PortfolioSentimentReportPage'
 import PortfoliosPage from './pages/PortfoliosPage'
 import ProfilePage from './pages/ProfilePage'
+import RecommendationsPage from './pages/RecommendationsPage'
+import SectorsPage from './pages/SectorsPage'
+import SectorDetailPage from './pages/SectorDetailPage'
 import SentimentPage from './pages/SentimentPage'
 import SignupPage from './pages/SignupPage'
+import QualityPage from './pages/QualityPage'
+import QualitySectorsPage from './pages/QualitySectorsPage'
 import './index.css'
 
 function App() {
@@ -38,10 +44,50 @@ function App() {
         }
       />
       <Route
+        path="/sectors"
+        element={
+          <ProtectedRoute>
+            <SectorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sectors/:id"
+        element={
+          <ProtectedRoute>
+            <SectorDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sectors/quality/top"
+        element={
+          <ProtectedRoute>
+            <QualitySectorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quality"
+        element={
+          <ProtectedRoute>
+            <QualityPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/sentiment"
         element={
           <ProtectedRoute>
             <SentimentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recommendations"
+        element={
+          <ProtectedRoute>
+            <RecommendationsPage />
           </ProtectedRoute>
         }
       />

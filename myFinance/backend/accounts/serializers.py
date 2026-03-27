@@ -28,6 +28,7 @@ class SignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+#<<<<<<< HEAD
             'id',
             'username',
             'email',
@@ -36,17 +37,27 @@ class SignupSerializer(serializers.ModelSerializer):
             'phone_number',
             'security_answers',
             'recovery_codes',
+#=======
+            'id', 'username', 'email', 'password', 'confirm_password',
+            'phone_number', 'security_answers', 'recovery_codes',
+#>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         )
 
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({'confirm_password': 'Passwords do not match.'})
+#<<<<<<< HEAD
 
+#=======
+#>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         answers = attrs.get('security_answers') or []
         question_ids = [item['question_id'] for item in answers]
         if len(set(question_ids)) != 2:
             raise serializers.ValidationError({'security_answers': 'Choose two different security questions.'})
+#<<<<<<< HEAD
 
+#=======
+#>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         available_ids = set(SecurityQuestion.objects.filter(id__in=question_ids, is_active=True).values_list('id', flat=True))
         if len(available_ids) != 2:
             raise serializers.ValidationError({'security_answers': 'One or more selected questions are invalid.'})
@@ -57,6 +68,7 @@ class SignupSerializer(serializers.ModelSerializer):
         answers = validated_data.pop('security_answers', [])
         validated_data.pop('confirm_password', None)
         password = validated_data.pop('password')
+#<<<<<<< HEAD
 
         user = User.objects.create_user(password=password, **validated_data)
         UserProfile.objects.create(user=user, phone_number=phone_number)
@@ -66,13 +78,21 @@ class SignupSerializer(serializers.ModelSerializer):
                 id__in=[item['question_id'] for item in answers]
             )
         }
+#=======
+        user = User.objects.create_user(password=password, **validated_data)
+        UserProfile.objects.create(user=user, phone_number=phone_number)
+        question_map = {q.id: q for q in SecurityQuestion.objects.filter(id__in=[item['question_id'] for item in answers])}
+#>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         for item in answers:
             UserSecurityAnswer.objects.create(
                 user=user,
                 question=question_map[item['question_id']],
                 answer_hash=make_password(item['answer'].strip().lower()),
             )
+#<<<<<<< HEAD
 
+#=======
+#>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
         raw_recovery_codes = self.context['generate_recovery_codes'](user=user)
         user._raw_recovery_codes = raw_recovery_codes
         return user
@@ -109,8 +129,12 @@ class PasswordResetFallbackSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         answers = attrs.get('security_answers') or []
+#<<<<<<< HEAD
         question_ids = [item['question_id'] for item in answers]
         if len(set(question_ids)) != 2:
+#=======
+         if len({item['question_id'] for item in answers}) != 2:
+#>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
             raise serializers.ValidationError({'security_answers': 'Provide answers for two different questions.'})
         return attrs
 
@@ -137,10 +161,14 @@ class TotpVerifySerializer(serializers.Serializer):
 
 
 def match_security_answers(*, user, answers):
+#<<<<<< HEAD
     stored_answers = {
         item.question_id: item
         for item in UserSecurityAnswer.objects.filter(user=user, question_id__in=[entry['question_id'] for entry in answers])
     }
+#=======
+    stored_answers = {item.question_id: item for item in UserSecurityAnswer.objects.filter(user=user, question_id__in=[entry['question_id'] for entry in answers])}
+#>>>>>>> 976cc83ad358ca0afbd53314dddde500db23c137
     if len(stored_answers) != 2:
         return False
     for answer in answers:

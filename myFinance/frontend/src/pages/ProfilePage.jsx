@@ -17,10 +17,12 @@ function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const [meResponse, portfolioResponse] = await Promise.all([api.get('/api/me/'), api.get('/api/portfolios/')])
+        const [meResponse, portfolioResponse] = await Promise.all([
+          api.get('/api/me/'),
+          api.get('/api/portfolios/'),
+        ])
         setUser(meResponse.data)
         setPortfolios(portfolioResponse.data)
-
         const stocksResponses = await Promise.all(
           portfolioResponse.data.map((item) => api.get(`/api/portfolios/${item.id}/stocks/`))
         )
@@ -35,7 +37,6 @@ function ProfilePage() {
         setLoading(false)
       }
     }
-
     loadProfile()
   }, [])
 
@@ -83,9 +84,7 @@ function ProfilePage() {
           <h2>Profile Overview</h2>
           <p>Account snapshot, portfolio health, and personalized investing notes.</p>
         </div>
-        <Link className="button button-secondary" to="/portfolios">
-          Open Portfolios
-        </Link>
+        <Link className="button button-secondary" to="/portfolios">Open Portfolios</Link>
       </section>
 
       {error ? <p className="form-error">{error}</p> : null}
@@ -110,16 +109,22 @@ function ProfilePage() {
                 <strong>Authenticator:</strong> {user?.totp_enabled ? 'Enabled' : 'Not enabled'}
               </p>
             </article>
+
             <article className="feature-card">
               <h3>My Insights</h3>
               <p>{profileInsight}</p>
-              <p className="muted">Keep at least one core portfolio and one experimental portfolio for better discipline.</p>
+              <p className="muted">
+                Keep at least one core portfolio and one experimental portfolio for better discipline.
+              </p>
             </article>
           </section>
 
           <section className="feature-card">
             <h3>Authenticator Setup</h3>
-            <p>Use an authenticator app as your primary password reset option, with security questions and recovery codes as fallback.</p>
+            <p>
+              Use an authenticator app as your primary password reset option, with security questions
+              and recovery codes as fallback.
+            </p>
             <div className="actions">
               <button className="button" type="button" onClick={handleSetupAuthenticator}>
                 {user?.totp_enabled ? 'Show Authenticator QR' : 'Generate Authenticator Secret'}
@@ -130,22 +135,30 @@ function ProfilePage() {
                 <p>
                   <strong>Secret:</strong> {totpSetup.secret}
                 </p>
-                {qrCodeUrl ? <img className="totp-qr-image" src={qrCodeUrl} alt="Authenticator QR code" /> : null}
+                {qrCodeUrl ? (
+                  <img className="totp-qr-image" src={qrCodeUrl} alt="Authenticator QR code" />
+                ) : null}
                 <p className="muted">
-                  Scan this QR code in your authenticator app. If needed, you can still enter the secret manually. This setup now
-                  reuses the same secret instead of rotating it on repeat clicks, and a small grace window is allowed if the OTP
-                  refreshes while you are typing.
+                  Scan this QR code in your authenticator app. If needed, you can still enter the
+                  secret manually. This setup reuses the same secret instead of rotating it on repeat
+                  clicks, and a small grace window is allowed if the OTP refreshes while you are typing.
                 </p>
                 <label htmlFor="totp-otp">Authenticator OTP</label>
                 <input
                   id="totp-otp"
                   type="text"
                   value={totpOtp}
-                  onChange={(event) => setTotpOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(event) =>
+                    setTotpOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
+                  }
                   maxLength={6}
                 />
                 <div className="actions">
-                  <button className="button button-secondary" type="button" onClick={handleVerifyAuthenticator}>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={handleVerifyAuthenticator}
+                  >
                     Verify OTP
                   </button>
                 </div>
@@ -162,7 +175,8 @@ function ProfilePage() {
               <ul className="dash-list">
                 {portfolios.map((item) => (
                   <li key={item.id}>
-                    <Link to={`/portfolios/${item.id}`}>{item.name}</Link> <span className="muted">({stockTotals[item.id] || 0} stocks)</span>
+                    <Link to={`/portfolios/${item.id}`}>{item.name}</Link>{' '}
+                    <span className="muted">({stockTotals[item.id] || 0} stocks)</span>
                   </li>
                 ))}
               </ul>

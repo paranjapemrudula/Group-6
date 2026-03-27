@@ -7,3 +7,8 @@ pandas
 numpy
 scikit-learn
 openai
+psycopg[binary]
+openpyxl
+langchain
+langchain-openai
+langgraph

@@ -35,7 +35,7 @@ User = get_user_model()
 
 DEFAULT_SECURITY_QUESTIONS = [
     'What was the name of your first school?',
-    'What is your mother’s birth city?',
+    'What is your mother\'s birth city?',
     'What was your childhood nickname?',
     'What is the name of your favorite teacher?',
 ]
@@ -152,7 +152,7 @@ class TotpSetupView(APIView):
             {
                 'secret': secret,
                 'otpauth_url': otpauth_url,
-                'message': 'Scan the QR code with your authenticator app and verify one OTP to enable it. If authenticator is already enabled, this shows your existing setup instead of creating a new secret.',
+                'message': 'Scan the QR code with your authenticator app and verify one OTP to enable it.',
             }
         )
 

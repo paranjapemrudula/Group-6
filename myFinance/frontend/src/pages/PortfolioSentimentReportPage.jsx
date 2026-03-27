@@ -44,15 +44,21 @@ function PortfolioSentimentReportPage() {
   }, [id])
 
   const stockBreakdownChartData = useMemo(() => {
-    if (!report?.summary) return null
+    if (!report?.stocks?.length) return null
     return {
       labels: ['Positive', 'Neutral', 'Negative'],
       datasets: [
         {
           data: [
-            report.summary.positive_stocks || 0,
-            report.summary.neutral_stocks || 0,
-            report.summary.negative_stocks || 0,
+            report.stocks
+              .filter((item) => item.sentiment_label === 'Positive')
+              .reduce((sum, item) => sum + (item.confidence_score || 0), 0),
+            report.stocks
+              .filter((item) => item.sentiment_label === 'Neutral')
+              .reduce((sum, item) => sum + (item.confidence_score || 0), 0),
+            report.stocks
+              .filter((item) => item.sentiment_label === 'Negative')
+              .reduce((sum, item) => sum + (item.confidence_score || 0), 0),
           ],
           backgroundColor: ['#16a34a', '#64748b', '#dc2626'],
           borderColor: ['#dcfce7', '#e2e8f0', '#fee2e2'],
@@ -68,8 +74,8 @@ function PortfolioSentimentReportPage() {
       labels: report.stocks.map((item) => item.symbol),
       datasets: [
         {
-          label: 'Sentiment %',
-          data: report.stocks.map((item) => item.sentiment_percent),
+          label: 'Confidence Score',
+          data: report.stocks.map((item) => item.confidence_score || 0),
           backgroundColor: report.stocks.map((item) => {
             if (item.sentiment_label === 'Positive') return '#16a34a'
             if (item.sentiment_label === 'Negative') return '#dc2626'
@@ -119,6 +125,11 @@ function PortfolioSentimentReportPage() {
               <p className="muted">Article coverage</p>
               <h4>{report.summary?.total_articles || 0}</h4>
               <strong>{report.summary?.tracked_stocks || 0} tracked stocks</strong>
+            </article>
+            <article className="sentiment-summary-card">
+              <p className="muted">Avg. confidence</p>
+              <h4>{report.summary?.average_confidence_score || 0}</h4>
+              <strong>Across tracked stocks</strong>
             </article>
             <article className="sentiment-summary-card">
               <p className="muted">Positive count</p>
@@ -181,7 +192,7 @@ function PortfolioSentimentReportPage() {
                         y: {
                           beginAtZero: true,
                           max: 100,
-                          title: { display: true, text: 'Sentiment %' },
+                          title: { display: true, text: 'Confidence Score' },
                         },
                       },
                     }}
@@ -204,6 +215,7 @@ function PortfolioSentimentReportPage() {
                     <tr>
                       <th>Symbol</th>
                       <th>Avg. Sentiment</th>
+                      <th>Confidence Score</th>
                       <th>Positive</th>
                       <th>Neutral</th>
                       <th>Negative</th>
@@ -215,6 +227,7 @@ function PortfolioSentimentReportPage() {
                       <tr key={`summary-${item.stock_id}`}>
                         <td>{item.symbol}</td>
                         <td>{item.avg_sentiment ?? item.sentiment_percent}%</td>
+                        <td>{item.confidence_score ?? 0}</td>
                         <td>{item.positive_count ?? item.positive_articles ?? 0}</td>
                         <td>{item.neutral_count ?? item.neutral_articles ?? 0}</td>
                         <td>{item.negative_count ?? item.negative_articles ?? 0}</td>
@@ -253,7 +266,8 @@ function PortfolioSentimentReportPage() {
                     <p className="muted">
                       Coverage: {item.coverage_count} article{item.coverage_count === 1 ? '' : 's'} | Positive{' '}
                       {item.positive_count ?? item.positive_articles} | Neutral {item.neutral_count ?? item.neutral_articles} |
-                      Negative {item.negative_count ?? item.negative_articles} | Price{' '}
+                      Negative {item.negative_count ?? item.negative_articles} | Confidence {item.confidence_score ?? 0} |
+                      Price{' '}
                       {item.price_direction_emoji || '->'} {(item.price_direction || 'flat').toUpperCase()}
                     </p>
                     {item.articles?.length ? (

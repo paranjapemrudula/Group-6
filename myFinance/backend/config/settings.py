@@ -11,18 +11,16 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv()
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 def get_env_list(name, default=''):
     value = os.environ.get(name, default)
@@ -49,7 +47,6 @@ ALLOWED_HOSTS = get_env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,testse
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -65,6 +62,8 @@ INSTALLED_APPS = [
     'portfolios',
     'stocks',
     'analysis',
+    'recommendations',
+    'chatbot',
 ]
 
 MIDDLEWARE = [
@@ -99,23 +98,36 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'ENGINE': os.environ.get('DJANGO_DB_ENGINE', os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3')),
+        'NAME': os.environ.get('DJANGO_DB_NAME', os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3')),
+        'USER': os.environ.get('DJANGO_DB_USER', os.environ.get('DB_USER', '')),
+        'PASSWORD': os.environ.get('DJANGO_DB_PASSWORD', os.environ.get('DB_PASSWORD', '')),
+        'HOST': os.environ.get('DJANGO_DB_HOST', os.environ.get('DB_HOST', '127.0.0.1')),
+        'PORT': os.environ.get('DJANGO_DB_PORT', os.environ.get('DB_PORT', '5432')),
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
 }
 
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'test_db.sqlite3',
+    }
+    MIGRATION_MODULES = {
+        'accounts': None,
+        'analysis': None,
+        'core': None,
+        'portfolios': None,
+        'recommendations': None,
+        'stocks': None,
+    }
+
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -133,8 +145,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -145,8 +155,6 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -154,11 +162,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = get_env_list(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000',
+    'http://localhost:5174,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000',
 )
 CSRF_TRUSTED_ORIGINS = get_env_list(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000',
+    'http://localhost:5174,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000',
 )
 
 REST_FRAMEWORK = {
@@ -198,10 +206,26 @@ CHATBOT_ALLOWED_ROUTE_PATHS = get_env_list(
     'CHATBOT_ALLOWED_ROUTE_PATHS',
     '/home,/news,/portfolios,/profile',
 )
+CHATBOT_HISTORY_LIMIT = int(os.environ.get('CHATBOT_HISTORY_LIMIT', 6))
+CHATBOT_RETRIEVAL_LIMIT = int(os.environ.get('CHATBOT_RETRIEVAL_LIMIT', 3))
+CHATBOT_RECOMMENDATION_CACHE_TTL_SECONDS = int(
+    os.environ.get('CHATBOT_RECOMMENDATION_CACHE_TTL_SECONDS', 300)
+)
+CHATBOT_LOCAL_ONLY = get_env_bool('CHATBOT_LOCAL_ONLY', default=True)
+CHATBOT_USE_OLLAMA = get_env_bool('CHATBOT_USE_OLLAMA', default=False)
+CHATBOT_OLLAMA_URL = os.environ.get('CHATBOT_OLLAMA_URL', 'http://127.0.0.1:11434/api/generate')
+CHATBOT_OLLAMA_MODEL = os.environ.get('CHATBOT_OLLAMA_MODEL', 'qwen2.5:7b')
+CHATBOT_USE_FINBERT = get_env_bool('CHATBOT_USE_FINBERT', default=False)
+CHATBOT_FINBERT_MODEL = os.environ.get('CHATBOT_FINBERT_MODEL', 'ProsusAI/finbert')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = get_env_bool('DJANGO_SESSION_COOKIE_SECURE', default=not DEBUG)
 CSRF_COOKIE_SECURE = get_env_bool('DJANGO_CSRF_COOKIE_SECURE', default=not DEBUG)
 
-
-
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)

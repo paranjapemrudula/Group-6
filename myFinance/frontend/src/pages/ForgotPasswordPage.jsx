@@ -87,7 +87,7 @@ function ForgotPasswordPage() {
           <h1>Reset Password</h1>
           <p>Use authenticator OTP if enabled, or fall back to security questions and one recovery code.</p>
 
-          {step === 'start' ? (
+          {step === 'start' && (
             <form onSubmit={handleStart}>
               <label htmlFor="reset-username">Username</label>
               <input
@@ -97,16 +97,16 @@ function ForgotPasswordPage() {
                 onChange={(event) => setUsername(event.target.value)}
                 required
               />
-              {error ? <p className="form-error">{error}</p> : null}
+              {error && <p className="form-error">{error}</p>}
               <button className="button" type="submit" disabled={loading}>
                 {loading ? 'Checking...' : 'Continue'}
               </button>
             </form>
-          ) : null}
+          )}
 
-          {step === 'verify' ? (
+          {step === 'verify' && (
             <form onSubmit={handleVerify}>
-              {startData?.totp_enabled ? (
+              {startData?.totp_enabled && (
                 <div className="actions">
                   <button
                     className={`button ${verificationMode === 'totp' ? '' : 'button-secondary'}`}
@@ -123,7 +123,7 @@ function ForgotPasswordPage() {
                     Questions + Recovery Code
                   </button>
                 </div>
-              ) : null}
+              )}
 
               {verificationMode === 'totp' ? (
                 <>
@@ -141,18 +141,24 @@ function ForgotPasswordPage() {
                 <>
                   {(startData?.security_questions || []).map((question) => (
                     <div key={question.question_id}>
-                      <label htmlFor={`question-${question.question_id}`}>{question.question_text}</label>
+                      <label htmlFor={`question-${question.question_id}`}>
+                        {question.question_text}
+                      </label>
                       <input
                         id={`question-${question.question_id}`}
                         type="text"
                         value={answers[question.question_id] || ''}
                         onChange={(event) =>
-                          setAnswers((prev) => ({ ...prev, [question.question_id]: event.target.value }))
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [question.question_id]: event.target.value,
+                          }))
                         }
                         required
                       />
                     </div>
                   ))}
+
                   <label htmlFor="recovery-code">Recovery Code</label>
                   <input
                     id="recovery-code"
@@ -164,14 +170,14 @@ function ForgotPasswordPage() {
                 </>
               )}
 
-              {error ? <p className="form-error">{error}</p> : null}
+              {error && <p className="form-error">{error}</p>}
               <button className="button" type="submit" disabled={loading}>
                 {loading ? 'Verifying...' : 'Verify'}
               </button>
             </form>
-          ) : null}
+          )}
 
-          {step === 'confirm' ? (
+          {step === 'confirm' && (
             <form onSubmit={handleConfirm}>
               <label htmlFor="new-password">New Password</label>
               <input
@@ -193,21 +199,21 @@ function ForgotPasswordPage() {
                 minLength={8}
               />
 
-              {error ? <p className="form-error">{error}</p> : null}
+              {error && <p className="form-error">{error}</p>}
               <button className="button" type="submit" disabled={loading}>
                 {loading ? 'Updating...' : 'Update Password'}
               </button>
             </form>
-          ) : null}
+          )}
 
-          {step === 'done' ? (
+          {step === 'done' && (
             <>
               <p>{success}</p>
               <p className="auth-foot">
                 Return to <Link to="/login">Login</Link>
               </p>
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
