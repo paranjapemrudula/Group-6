@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import { api } from '../lib/api'
 
@@ -10,6 +10,9 @@ function PortfoliosPage() {
   const [editingName, setEditingName] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const pendingStock = useMemo(() => location.state?.pendingStock || null, [location.state])
 
   const fetchPortfolios = async () => {
     try {
@@ -26,6 +29,40 @@ function PortfoliosPage() {
     fetchPortfolios()
   }, [])
 
+  const addPendingStockToPortfolio = async (portfolioId) => {
+    if (!pendingStock) {
+      return true
+    }
+
+    try {
+      const normalizedIndiaSymbol =
+        pendingStock.market === 'INDIA' && !String(pendingStock.symbol || '').includes('.')
+          ? `${String(pendingStock.symbol).toUpperCase()}.NS`
+          : String(pendingStock.symbol || '').toUpperCase()
+
+      let quote = {}
+      try {
+        const quoteResponse = await api.get(`/api/stocks/quote/?symbol=${encodeURIComponent(normalizedIndiaSymbol)}`, {
+          timeout: 5000,
+        })
+        quote = quoteResponse.data || {}
+      } catch {
+        quote = {}
+      }
+
+      await api.post(`/api/portfolios/${portfolioId}/stocks/`, {
+        symbol: quote.actual_symbol || normalizedIndiaSymbol,
+        company_name: pendingStock.company_name,
+        sector_id: pendingStock.sector_id,
+        buy_price: Number(quote.current_price || quote.avg_price || 0).toFixed(2),
+        quantity: 1,
+      })
+      return true
+    } catch {
+      return false
+    }
+  }
+
   const handleCreate = async (event) => {
     event.preventDefault()
     if (!name.trim()) return
@@ -33,6 +70,18 @@ function PortfoliosPage() {
       const response = await api.post('/api/portfolios/', { name: name.trim() })
       setPortfolios((prev) => [response.data, ...prev])
       setName('')
+      if (pendingStock) {
+        const added = await addPendingStockToPortfolio(response.data.id)
+        navigate(`/portfolios/${response.data.id}`, {
+          state: added
+            ? { actionMessage: `${pendingStock.symbol} was added to ${response.data.name}.` }
+            : {
+                pendingStock,
+                createdFromShortcut: true,
+                actionMessage: `Portfolio created, but ${pendingStock.symbol} still needs to be added.`,
+              },
+        })
+      }
     } catch {
       setError('Could not create portfolio.')
     }
@@ -69,6 +118,11 @@ function PortfoliosPage() {
         <div>
           <h2>Your Portfolios</h2>
           <p>Create focused baskets for goals like long-term investing, swing trades, or sector experiments.</p>
+          {pendingStock ? (
+            <p className="muted">
+              Creating a portfolio now will continue with <strong>{pendingStock.symbol}</strong> and add it to the new portfolio.
+            </p>
+          ) : null}
         </div>
         <form className="portfolio-create" onSubmit={handleCreate}>
           <input

@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from core.views import healthcheck
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('accounts.urls')),
@@ -25,4 +27,5 @@ urlpatterns = [
     path('api/', include('analysis.urls')),
     path('api/', include('recommendations.urls')),
     path('api/', include('core.urls')),
+    path('', healthcheck, name='root-healthcheck'),
 ]

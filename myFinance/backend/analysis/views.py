@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -14,13 +16,30 @@ from .services import (
     resolve_timeframe,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class ChatbotView(APIView):
     def post(self, request):
         question = request.data.get('question', '')
         history = request.data.get('history', [])
-        payload = generate_chatbot_reply(user=request.user, question=question, history=history)
-        return Response(payload)
+        try:
+            payload = generate_chatbot_reply(user=request.user, question=question, history=history)
+            return Response(payload)
+        except Exception as exc:  # pragma: no cover - protective API fallback
+            logger.exception('Chatbot API failed: %s', exc)
+            return Response(
+                {
+                    'answer': 'The chatbot hit a temporary problem, but your account data is still safe. Please try again in a moment.',
+                    'model': 'api-fallback',
+                    'category': 'finance',
+                    'route': 'fallback',
+                    'actions': [{'type': 'route', 'path': '/portfolios', 'label': 'Open Portfolios'}],
+                    'quick_prompts': [],
+                    'meta': {'error': str(exc)},
+                },
+                status=200,
+            )
 
 
 class ChatbotFeedbackView(APIView):

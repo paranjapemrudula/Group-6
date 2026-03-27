@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import { api, publicApi } from '../lib/api'
 
@@ -27,6 +27,8 @@ function SectorsPage() {
     selectedPortfolioId: '',
   })
   const stockListRef = useRef(null)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     const loadSectors = async () => {
@@ -118,6 +120,25 @@ function SectorsPage() {
       open: false,
       stock: null,
       selectedPortfolioId: '',
+    })
+  }
+
+  const navigateToCreatePortfolio = () => {
+    if (!portfolioModal.stock) {
+      navigate('/portfolios')
+      return
+    }
+    navigate('/portfolios', {
+      state: {
+        pendingStock: {
+          symbol: portfolioModal.stock.symbol,
+          company_name: portfolioModal.stock.company_name,
+          market: portfolioModal.stock.market,
+          sector_id: selectedSector?.id || null,
+          sector_name: selectedSector?.name || portfolioModal.stock.sector || '',
+        },
+        returnTo: location.pathname,
+      },
     })
   }
 
@@ -240,8 +261,23 @@ function SectorsPage() {
                   <p>{sector.universe_stock_count || 0} imported stock{sector.universe_stock_count === 1 ? '' : 's'}</p>
                 </div>
                 <div className="actions">
-                  <button className="button" type="button" onClick={() => setSelectedSector(sector)}>
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => navigate(`/sectors/${sector.id}`)}
+                  >
                     View Stocks
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={() =>
+                      navigate('/sectors/quality/top', {
+                        state: { market },
+                      })
+                    }
+                  >
+                    Quality
                   </button>
                 </div>
               </article>
@@ -267,7 +303,23 @@ function SectorsPage() {
             <p className="muted">
               Showing {filteredStocks.length} of {stocks.length} stock{stocks.length === 1 ? '' : 's'}
             </p>
-          </div>
+            <div className="actions">
+              <button
+                type="button"
+                className="button button-secondary"
+                  onClick={() =>
+                    navigate('/quality', {
+                      state: {
+                        sector: selectedSector,
+                        stocks: filteredStocks.slice(0, 10),
+                      },
+                    })
+                  }
+                >
+                  Quality: Top 10
+                </button>
+              </div>
+            </div>
 
           {loadingStocks ? <p>Loading sector stocks...</p> : null}
 
@@ -347,11 +399,13 @@ function SectorsPage() {
                 </strong>
               </p>
             ) : null}
-            {!portfolioOptions.length ? (
-              <p className="form-error">
-                No portfolios found. <Link to="/portfolios">Create a portfolio first</Link>.
-              </p>
-            ) : null}
+            <p className={portfolioOptions.length ? 'muted' : 'form-error'}>
+              {portfolioOptions.length ? 'Want a different destination? ' : 'No portfolios found. '}
+              <button type="button" className="button-link" onClick={navigateToCreatePortfolio}>
+                Create a portfolio and add this stock there
+              </button>
+              .
+            </p>
             <div className="actions">
               <button
                 className="button"
